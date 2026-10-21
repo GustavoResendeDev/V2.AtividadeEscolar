@@ -109,7 +109,7 @@ header.scrolled .logoHeader {
 .hero {
   background-image:
     linear-gradient(rgba(0, 0, 0, 0.752), rgba(0, 0, 0, 0.752)),
-    url("/Users/gustavoresende/Desktop/Nexora Startup documentos/REGISTRO DE CLIENTES/NOVA ERA BARBEARIA/ESTRUTURA SITE/NOVA ERA SITE/image/herosectionimg.png");
+    url("../image/herosectionimg.png");
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
@@ -246,18 +246,18 @@ header.scrolled .logoHeader {
 .cartao1 {
   background-image:
     linear-gradient(rgba(0, 0, 0, 0.752), rgba(0, 0, 0, 0.752)),
-    url("/Users/gustavoresende/Desktop/Nexora Startup documentos/REGISTRO DE CLIENTES/NOVA ERA BARBEARIA/ESTRUTURA SITE/NOVA ERA SITE/image/sobreimg01.png");
+    url("../image/sobreimg01.png");
 }
 .cartao2 {
   background-image:
     linear-gradient(rgba(0, 0, 0, 0.752), rgba(0, 0, 0, 0.752)),
-    url("/Users/gustavoresende/Desktop/Nexora Startup documentos/REGISTRO DE CLIENTES/NOVA ERA BARBEARIA/ESTRUTURA SITE/NOVA ERA SITE/image/sobreimg02.png");
+    url("../image/sobreimg02.png");
 }
 
 .cartao3 {
   background-image:
     linear-gradient(rgba(0, 0, 0, 0.752), rgba(0, 0, 0, 0.752)),
-    url("/Users/gustavoresende/Desktop/Nexora Startup documentos/REGISTRO DE CLIENTES/NOVA ERA BARBEARIA/ESTRUTURA SITE/NOVA ERA SITE/image/sobreimg03.png");
+    url("../image/sobreimg03.png");
 }
 
 .cartao.ativo {
@@ -351,7 +351,7 @@ header.scrolled .logoHeader {
 .servicos {
   background-image:
     linear-gradient(rgba(0, 0, 0, 0.752), rgba(0, 0, 0, 0.752)),
-    url("/Users/gustavoresende/Desktop/Nexora Startup documentos/REGISTRO DE CLIENTES/NOVA ERA BARBEARIA/ESTRUTURA SITE/NOVA ERA SITE/image/serviços.png");
+    url("../image/serviços.png");
   background-repeat: no-repeat;
   background-position: center bottom;
   background-size: cover;

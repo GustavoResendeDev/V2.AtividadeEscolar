@@ -1,0 +1,729 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: Arial, sans-serif;
+  background-color: #000000;
+  color: #333;
+  line-height: 1.6;
+}
+
+header {
+  background-color: transparent;
+  color: #ffffff;
+  padding: 10px 3%;
+  align-items: center;
+  justify-content: space-between;
+  display: flex;
+
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  z-index: 1000;
+  box-sizing: border-box;
+
+  transition:
+    background-color 0.4s ease,
+    backdrop-filter 0.4s ease,
+    padding 0.4s ease,
+    box-shadow 0.4s ease;
+
+  .logoHeader {
+    align-items: center;
+    width: 60px;
+    height: 60px;
+    transition:
+      width 0.4s ease,
+      height 0.4s ease;
+  }
+
+  .menu {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    margin-left: 20px;
+  }
+
+  .menu ul {
+    list-style: none;
+    display: flex;
+    gap: 15px;
+    padding: 0;
+    margin: 0;
+  }
+
+  .menu li a {
+    text-decoration: none;
+    color: #ffffff;
+    font-size: 1.1rem;
+    font-weight: 500;
+    padding-bottom: 4px;
+    position: relative;
+  }
+
+  .menu li a::after {
+    content: "";
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    background-color: #ffffff;
+
+    transform: scaleX(0);
+
+    transform-origin: bottom right;
+
+    transition: transform 0.3s ease-out;
+  }
+
+  .menu li a:hover::after {
+    transform: scaleX(1);
+    transform-origin: bottom left;
+  }
+}
+
+header.scrolled {
+  background-color: rgba(10, 10, 10, 0.6);
+
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+  padding: 10px 5%;
+}
+
+header.scrolled .logoHeader {
+  width: 50px;
+  height: 50px;
+}
+
+/*INICIO SEÇÃO HERO*/
+.hero {
+  background-image:
+    linear-gradient(rgba(0, 0, 0, 0.752), rgba(0, 0, 0, 0.752)),
+    url("/Users/gustavoresende/Desktop/Nexora Startup documentos/REGISTRO DE CLIENTES/NOVA ERA BARBEARIA/ESTRUTURA SITE/NOVA ERA SITE/image/herosectionimg.png");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+
+  padding: 60px 20px;
+  min-height: 100vh;
+
+  /*ALINHAMENTO A ESQUERDA E CENTRALDO CONTEUDO DA SEÇÃO HERO*/
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  text-align: left;
+}
+
+.conteudoHero {
+  max-width: 580px;
+  width: 100%;
+  margin-left: 6%;
+}
+
+.minititulo {
+  margin: 0 0 6px 0;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 2.5px;
+  color: #ffffff;
+  line-height: 1.2;
+}
+
+.tituloHero {
+  margin: 0 0 12px 0;
+  font-size: clamp(2.4rem, 5vw, 3.6rem);
+  font-weight: 800;
+  color: #ffffff;
+  line-height: 1.08;
+}
+
+.descricaoHero {
+  margin: 0 0 14px 0;
+  font-size: 1.1rem;
+  color: #ffffff;
+  line-height: 1.5;
+}
+
+.etiquetaHero {
+  margin: 0 0 24px 0;
+  display: flex;
+  font-size: 0.9rem;
+  color: #ffffff;
+  align-items: center;
+  gap: 8px;
+}
+
+.etiquetaHero::before {
+  content: "";
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  background-color: #099b0c;
+  border-radius: 50%;
+}
+
+.botaoAgendamento {
+  display: inline-block;
+  align-items: center;
+  justify-content: center;
+
+  position: relative;
+  z-index: 1;
+
+  background-color: #ffffff;
+  color: #000000;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 1rem;
+  padding: 14px 32px;
+  border-radius: 12px;
+  cursor: pointer;
+}
+
+.botaoAgendamento:hover {
+  background-color: #000000;
+  color: #ffffff;
+  transform: translateY(-3px);
+  box-shadow: 0 8px 16px rgba(255, 253, 253, 0.658);
+}
+
+/*INICIO SEÇÃO SOBRE*/
+.secaoSobre {
+  position: relative;
+  width: 100%;
+  height: 100vh;
+  overflow: hidden;
+  background-color: #000;
+}
+
+.cartao {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity 1s ease-in-out,
+    visibility 1s ease-in-out;
+  z-index: 1;
+}
+
+.cartao::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 2;
+}
+
+.cartao1 {
+  background-image:
+    linear-gradient(rgba(0, 0, 0, 0.752), rgba(0, 0, 0, 0.752)),
+    url("/Users/gustavoresende/Desktop/Nexora Startup documentos/REGISTRO DE CLIENTES/NOVA ERA BARBEARIA/ESTRUTURA SITE/NOVA ERA SITE/image/sobreimg01.png");
+}
+.cartao2 {
+  background-image:
+    linear-gradient(rgba(0, 0, 0, 0.752), rgba(0, 0, 0, 0.752)),
+    url("/Users/gustavoresende/Desktop/Nexora Startup documentos/REGISTRO DE CLIENTES/NOVA ERA BARBEARIA/ESTRUTURA SITE/NOVA ERA SITE/image/sobreimg02.png");
+}
+
+.cartao3 {
+  background-image:
+    linear-gradient(rgba(0, 0, 0, 0.752), rgba(0, 0, 0, 0.752)),
+    url("/Users/gustavoresende/Desktop/Nexora Startup documentos/REGISTRO DE CLIENTES/NOVA ERA BARBEARIA/ESTRUTURA SITE/NOVA ERA SITE/image/sobreimg03.png");
+}
+
+.cartao.ativo {
+  opacity: 1;
+  visibility: visible;
+  z-index: 3;
+}
+
+.conteudoCartao {
+  position: relative;
+  z-index: 4;
+  width: 90%;
+  max-width: 800px;
+  text-align: center;
+}
+
+.conteudoCartao h3,
+.conteudoCartao p {
+  opacity: 0;
+  transform: translateY(40px);
+}
+
+.conteudoCartao h3 {
+  font-size: clamp(3rem, 8vw, 6rem);
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 12px;
+
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.7) 0%,
+    rgba(255, 255, 255, 0.1) 100%
+  );
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.conteudoCartao p {
+  font-size: 1.2rem;
+  line-height: 1.7;
+  font-weight: 400;
+  color: #f3f4f6;
+
+  text-shadow: 0 4px 15px rgba(0, 0, 0, 0.9);
+}
+
+.cartao.ativo .conteudoCartao h3 {
+  opacity: 1;
+  transform: translateY(0);
+  transition: all 0.9s cubic-bezier(0.2, 0.8, 0.2, 1) 0.5s;
+}
+
+.cartao.ativo .conteudoCartao p {
+  opacity: 1;
+  transform: translateY(0);
+  transition: all 0.9s cubic-bezier(0.2, 0.8, 0.2, 1) 0.8s;
+}
+
+.pontinhos {
+  position: absolute;
+  bottom: 40px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
+
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.ponto {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.3);
+  cursor: pointer;
+
+  transition: all 0.5s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+.ponto.ativo {
+  width: 36px;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 6px;
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+}
+
+/*INICIO SEÇÃO SERVIÇOS*/
+.servicos {
+  background-image:
+    linear-gradient(rgba(0, 0, 0, 0.752), rgba(0, 0, 0, 0.752)),
+    url("/Users/gustavoresende/Desktop/Nexora Startup documentos/REGISTRO DE CLIENTES/NOVA ERA BARBEARIA/ESTRUTURA SITE/NOVA ERA SITE/image/serviços.png");
+  background-repeat: no-repeat;
+  background-position: center bottom;
+  background-size: cover;
+  padding: 100px 5%;
+  background-color: #050505;
+  color: #ffffff;
+  position: relative;
+  overflow: hidden;
+}
+
+.servicos::before {
+  content: "";
+  position: absolute;
+  top: -10%;
+  left: -10%;
+  width: 400px;
+  height: 400px;
+  background: radial-gradient(
+    circle,
+    rgba(37, 211, 102, 0.08) 0%,
+    rgba(0, 0, 0, 0) 70%
+  );
+  border-radius: 50%;
+  z-index: 0;
+}
+
+.cabecalhoServicos {
+  text-align: center;
+  margin-bottom: 40px;
+  position: relative;
+  z-index: 2;
+
+  .tituloServicos {
+    font-size: 45px;
+  }
+}
+
+.gridServicos {
+  display: grid;
+  grid-template-columns: 1fr; /* 1 coluna no celular */
+  gap: 30px;
+  max-width: 1100px;
+  margin: 0 auto;
+  position: relative;
+  z-index: 2;
+}
+
+@media (min-width: 900px) {
+  .gridServicos {
+    grid-template-columns: 1fr 1fr;
+    gap: 40px;
+  }
+}
+
+.cartaoVidro {
+  background: rgba(25, 25, 25, 0.4);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 24px;
+  padding: 40px;
+
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4);
+  transition:
+    transform 0.4s ease,
+    border-color 0.4s ease;
+}
+
+.cartaoVidro:hover {
+  transform: translateY(-5px);
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+.cartaoTopo {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 30px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.iconeServico {
+  width: 28px;
+  height: 28px;
+  color: #ffffff;
+}
+
+.cartaoTopo h3 {
+  font-size: 1.8rem;
+  font-weight: 700;
+  margin: 0;
+  letter-spacing: 1px;
+}
+
+.listaServicos {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.listaServicos li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 8px 0;
+  transition: transform 0.3s ease;
+}
+
+.listaServicos li:hover {
+  transform: translateX(5px);
+}
+
+.infoServico {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.nome {
+  font-size: 1.2rem;
+  font-weight: 500;
+  color: #e5e7eb;
+}
+
+.tempo {
+  font-size: 0.8rem;
+  color: #9ca3af;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.linhaConectora {
+  flex-grow: 1;
+  border-bottom: 1px dashed rgba(255, 255, 255, 0.15);
+  margin: 0 15px;
+  position: relative;
+  top: -8px;
+}
+
+.preco {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #ffffff;
+  white-space: nowrap;
+}
+
+/*INICIO SEÇÃO LOCALIZAÇÃO*/
+#local.local {
+  --local-top: 0px; /* Se o menu for fixo, use a altura dele, por exemplo 72px. */
+  --local-percurso: 260svh; /* Maior = mais rolagem para abrir a porta. */
+  position: relative;
+  display: block;
+  padding: 0;
+  min-height: 0;
+  color: #fff;
+  background-color: #000000;
+  isolation: isolate;
+  /* Não use overflow: hidden/auto aqui ou em um ancestral do sticky. */
+}
+
+#local *,
+#local *::before,
+#local *::after {
+  box-sizing: border-box;
+}
+
+#local .localSticky {
+  position: relative;
+  top: var(--local-top);
+  min-height: calc(100vh - var(--local-top));
+  min-height: calc(100svh - var(--local-top));
+  display: grid;
+  align-items: center;
+  padding: clamp(16px, 3vw, 48px);
+}
+
+#local.is-scrubbing {
+  min-height: 260vh;
+  min-height: var(--local-percurso);
+}
+
+#local.is-scrubbing .localSticky {
+  position: sticky;
+}
+
+#local .fundoVidro {
+  display: grid;
+  grid-template-columns: minmax(230px, 0.75fr) minmax(0, 2fr);
+  gap: clamp(24px, 3vw, 48px);
+  align-items: center;
+  width: 100%;
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: clamp(20px, 3vw, 40px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 24px;
+  background: rgba(20, 20, 20, 0.72);
+  box-shadow: 0 16px 50px rgba(0, 0, 0, 0.35);
+  /* Não desfocar o vídeo: o painel já tem fundo escuro. */
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  color: #fff;
+}
+
+#local .localInfo {
+  min-width: 0;
+}
+
+#local .localEtiqueta {
+  display: block;
+  margin-bottom: 12px;
+  color: #aaa;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+}
+
+#local .localInfo h2 {
+  margin: 0 0 20px;
+  font-size: clamp(1.8rem, 3vw, 2.7rem);
+  font-weight: 600;
+  line-height: 1.15;
+  letter-spacing: -0.03em;
+}
+
+#local .endereco {
+  margin: 0 0 28px;
+  font-size: 1rem;
+  line-height: 1.7;
+  color: #ccc;
+}
+
+#local .mapaBotoes {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+#local .btn.vidro-btn {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 18px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  color: #fff;
+  font-size: 0.95rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition:
+    background 0.2s,
+    border-color 0.2s;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+#local .btn.vidro-btn:hover {
+  background: rgba(255, 255, 255, 0.13);
+  border-color: #aaa;
+}
+
+#local .btn.vidro-btn:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 4px;
+}
+
+#local .localVisual {
+  min-width: 0;
+  margin: 0;
+}
+
+#local .localMedia {
+  position: relative;
+  aspect-ratio: 1660 / 948;
+  background: #0b0b0b;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+#local .localPoster,
+#local .localVideo {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+#local .localVideo {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+#local.is-scrubbing .localVideo {
+  opacity: 1;
+}
+
+#local .localVisual figcaption {
+  margin-top: 14px;
+  text-align: right;
+  color: #aaa;
+  font-size: 0.8rem;
+}
+
+#local .localDicaAnimada {
+  display: none;
+}
+
+#local.is-scrubbing .localDicaAnimada {
+  display: inline;
+}
+
+#local.is-scrubbing .localDicaEstatica {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  #local .localSticky {
+    padding: 16px;
+  }
+  #local .fundoVidro {
+    grid-template-columns: 1fr;
+    padding: 20px;
+    gap: 22px;
+  }
+  #local .localInfo {
+    text-align: center;
+  }
+  #local .localEtiqueta {
+    margin-bottom: 8px;
+  }
+  #local .localInfo h2 {
+    margin-bottom: 12px;
+  }
+  #local .endereco {
+    margin-bottom: 18px;
+    font-size: 0.9rem;
+    line-height: 1.5;
+  }
+  #local .mapaBotoes {
+    flex-direction: row;
+  }
+  #local .btn.vidro-btn {
+    flex: 1;
+    padding: 13px 12px;
+    font-size: 0.85rem;
+  }
+  #local .localVisual figcaption {
+    text-align: center;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #local.is-scrubbing {
+    min-height: 0;
+  }
+  #local.is-scrubbing .localSticky {
+    position: relative;
+  }
+  #local .localVideo {
+    display: none;
+  }
+  #local .btn.vidro-btn {
+    transition: none;
+  }
+}

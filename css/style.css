@@ -4,6 +4,10 @@
   box-sizing: border-box;
 }
 
+html { /* Esse e um comando em testes para suavizar a troca de seções ao clicar no nav presente no header, ainda busco descobrir a melhor forma de aplicar ele na pagina*/
+  scroll-bahavior: smooth;
+}
+
 body {
   font-family: Arial, sans-serif;
   background-color: #000000;

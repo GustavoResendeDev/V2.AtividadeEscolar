@@ -128,7 +128,7 @@ document.addEventListener("DOMContentLoaded", () => {
       video.src = video.dataset.src;
       video.load();
     }
-    wake();
+    wake(); // está vazio 
   }
 
   function mediaReady() {

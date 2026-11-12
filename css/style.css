@@ -1,267 +1,537 @@
+/* =========================================================
+   NOVA ERA BARBEARIA — ESTILOS
+   Paleta oficial (image/paleta de cores site.jpg):
+   #0A0A0A  #161616  #1D1C1C  #232323  #2C2C2C  #363636  #454444
+   ========================================================= */
+
+:root {
+  /* Cores da marca */
+  --preto-0: #0a0a0a;
+  --preto-1: #161616;
+  --preto-2: #1d1c1c;
+  --preto-3: #232323;
+  --preto-4: #2c2c2c;
+  --preto-5: #363636;
+  --preto-6: #454444;
+
+  --branco: #ffffff;
+  --texto: #e9e9e9;
+  --texto-suave: #a3a3a3;
+  --texto-apagado: #7a7a7a;
+  --linha: rgba(255, 255, 255, 0.1);
+  --linha-forte: rgba(255, 255, 255, 0.22);
+  --verde: #22c55e;
+
+  /* Tipografia */
+  --fonte-titulo: "Oswald", "Arial Narrow", Arial, sans-serif;
+  --fonte-texto: "Manrope", "Segoe UI", Arial, sans-serif;
+
+  /* Movimento */
+  --ease-saida: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --altura-header: 70px;
+}
+
 * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
 }
 
-html { /* Esse e um comando em testes para suavizar a troca de seções ao clicar no nav presente no header, ainda busco descobrir a melhor forma de aplicar ele na pagina*/
-  scroll-bahavior: smooth;
+html {
+  /* Rolagem suave ao clicar nos links do menu (corrigido: "scroll-behavior") */
+  scroll-behavior: smooth;
+  /* Evita que o header fixo cubra o topo da seção ao navegar */
+  scroll-padding-top: var(--altura-header);
+  -webkit-text-size-adjust: 100%;
 }
 
 body {
-  font-family: Arial, sans-serif;
-  background-color: #000000;
-  color: #333;
+  font-family: var(--fonte-texto);
+  background-color: var(--preto-0);
+  color: var(--texto);
   line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
 }
 
-header {
-  background-color: transparent;
-  color: #ffffff;
-  padding: 10px 3%;
-  align-items: center;
-  justify-content: space-between;
-  display: flex;
+/* Textura sutil de "grão" de filme por cima do site inteiro */
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 999;
+  pointer-events: none;
+  opacity: 0.05;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
 
+img,
+svg,
+video {
+  display: block;
+  max-width: 100%;
+}
+
+::selection {
+  background: var(--branco);
+  color: var(--preto-0);
+}
+
+:focus-visible {
+  outline: 2px solid var(--branco);
+  outline-offset: 4px;
+  border-radius: 4px;
+}
+
+/* Barra de rolagem discreta (Chrome/Edge/Firefox) */
+html {
+  scrollbar-color: var(--preto-5) var(--preto-0);
+}
+
+/* Título padrão das seções: pequena linha antes do texto */
+.minititulo {
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+  margin: 0 0 18px 0;
+  font-family: var(--fonte-texto);
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.32em;
+  color: var(--texto-suave);
+  line-height: 1.2;
+}
+
+.minititulo::before {
+  content: "";
+  width: 36px;
+  height: 1px;
+  background: currentColor;
+  opacity: 0.7;
+}
+
+/* =========================================================
+   HEADER
+   ========================================================= */
+header {
   position: fixed;
   top: 0;
   left: 0;
   width: 100%;
   z-index: 1000;
-  box-sizing: border-box;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 6%;
+  color: var(--branco);
+  background-color: transparent;
+  border-bottom: 1px solid transparent;
 
   transition:
     background-color 0.4s ease,
     backdrop-filter 0.4s ease,
     padding 0.4s ease,
+    border-color 0.4s ease,
     box-shadow 0.4s ease;
-
-  .logoHeader {
-    align-items: center;
-    width: 60px;
-    height: 60px;
-    transition:
-      width 0.4s ease,
-      height 0.4s ease;
-  }
-
-  .menu {
-    position: relative;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    text-align: center;
-    margin-left: 20px;
-  }
-
-  .menu ul {
-    list-style: none;
-    display: flex;
-    gap: 15px;
-    padding: 0;
-    margin: 0;
-  }
-
-  .menu li a {
-    text-decoration: none;
-    color: #ffffff;
-    font-size: 1.1rem;
-    font-weight: 500;
-    padding-bottom: 4px;
-    position: relative;
-  }
-
-  .menu li a::after {
-    content: "";
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    height: 2px;
-    background-color: #ffffff;
-
-    transform: scaleX(0);
-
-    transform-origin: bottom right;
-
-    transition: transform 0.3s ease-out;
-  }
-
-  .menu li a:hover::after {
-    transform: scaleX(1);
-    transform-origin: bottom left;
-  }
 }
 
+header .logoLink {
+  display: block;
+  border-radius: 8px;
+}
+
+header .logoHeader {
+  width: 56px;
+  height: 56px;
+  object-fit: contain;
+  transition:
+    width 0.4s ease,
+    height 0.4s ease,
+    transform 0.4s var(--ease-saida);
+}
+
+header .logoLink:hover .logoHeader {
+  transform: scale(1.06);
+}
+
+header .menu ul {
+  list-style: none;
+  display: flex;
+  gap: clamp(18px, 3vw, 40px);
+}
+
+header .menu li a {
+  position: relative;
+  display: inline-block;
+  padding: 6px 0;
+  color: rgba(255, 255, 255, 0.78);
+  text-decoration: none;
+  font-size: 0.82rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  transition: color 0.3s ease;
+}
+
+header .menu li a::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 1px;
+  background-color: var(--branco);
+  transform: scaleX(0);
+  transform-origin: bottom right;
+  transition: transform 0.35s var(--ease-saida);
+}
+
+header .menu li a:hover,
+header .menu li a.atual {
+  color: var(--branco);
+}
+
+header .menu li a:hover::after,
+header .menu li a.atual::after {
+  transform: scaleX(1);
+  transform-origin: bottom left;
+}
+
+/* Estado ao rolar a página (classe adicionada pelo JS) */
 header.scrolled {
-  background-color: rgba(10, 10, 10, 0.6);
-
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-
-  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.3);
-  padding: 10px 5%;
+  padding: 10px 6%;
+  background-color: rgba(10, 10, 10, 0.72);
+  backdrop-filter: blur(14px) saturate(140%);
+  -webkit-backdrop-filter: blur(14px) saturate(140%);
+  border-bottom-color: var(--linha);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
 }
 
 header.scrolled .logoHeader {
-  width: 50px;
-  height: 50px;
+  width: 46px;
+  height: 46px;
 }
 
-/*INICIO SEÇÃO HERO*/
+@media (max-width: 560px) {
+  header {
+    padding: 14px 5%;
+  }
+  header.scrolled {
+    padding: 8px 5%;
+  }
+  header .logoHeader {
+    width: 46px;
+    height: 46px;
+  }
+  header.scrolled .logoHeader {
+    width: 40px;
+    height: 40px;
+  }
+  header .menu ul {
+    gap: 16px;
+  }
+  header .menu li a {
+    font-size: 0.68rem;
+    letter-spacing: 0.1em;
+  }
+}
+
+/* =========================================================
+   HERO
+   ========================================================= */
 .hero {
-  background-image:
-    linear-gradient(rgba(0, 0, 0, 0.752), rgba(0, 0, 0, 0.752)),
-    url("../image/herosectionimg.png");
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-  background-attachment: fixed;
-
-  padding: 60px 20px;
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
   min-height: 100vh;
+  min-height: 100svh;
+  padding: 120px 6% 100px;
 
-  /*ALINHAMENTO A ESQUERDA E CENTRALDO CONTEUDO DA SEÇÃO HERO*/
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: flex-start;
   text-align: left;
+  background-color: var(--preto-0);
+}
+
+/* Imagem de fundo com leve "zoom" de entrada */
+.hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  background: url("../image/herosectionimg.webp") center right / cover no-repeat;
+  transform: scale(1.08);
+  animation: zoomHero 14s var(--ease-saida) forwards;
+}
+
+/* Escurece mais à esquerda (onde fica o texto) e funde com a próxima seção */
+.hero::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background:
+    linear-gradient(
+      90deg,
+      rgba(10, 10, 10, 0.94) 0%,
+      rgba(10, 10, 10, 0.78) 40%,
+      rgba(10, 10, 10, 0.35) 75%,
+      rgba(10, 10, 10, 0.25) 100%
+    ),
+    linear-gradient(180deg, rgba(10, 10, 10, 0.6) 0%, transparent 25%, transparent 70%, var(--preto-0) 100%);
+}
+
+@keyframes zoomHero {
+  to {
+    transform: scale(1);
+  }
 }
 
 .conteudoHero {
-  max-width: 580px;
+  max-width: 640px;
   width: 100%;
-  margin-left: 6%;
 }
 
-.minititulo {
-  margin: 0 0 6px 0;
-  font-size: 0.85rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 2.5px;
-  color: #ffffff;
-  line-height: 1.2;
+/* Entrada em cascata dos elementos do hero */
+.conteudoHero > * {
+  opacity: 0;
+  transform: translateY(28px);
+  animation: subirHero 1s var(--ease-saida) forwards;
+}
+.conteudoHero > :nth-child(1) { animation-delay: 0.2s; }
+.conteudoHero > :nth-child(2) { animation-delay: 0.35s; }
+.conteudoHero > :nth-child(3) { animation-delay: 0.5s; }
+.conteudoHero > :nth-child(4) { animation-delay: 0.65s; }
+.conteudoHero > :nth-child(5) { animation-delay: 0.8s; }
+
+@keyframes subirHero {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.hero .minititulo {
+  color: rgba(255, 255, 255, 0.75);
 }
 
 .tituloHero {
-  margin: 0 0 12px 0;
-  font-size: clamp(2.4rem, 5vw, 3.6rem);
-  font-weight: 800;
-  color: #ffffff;
-  line-height: 1.08;
+  margin: 0 0 22px 0;
+  font-family: var(--fonte-titulo);
+  font-size: clamp(3rem, 9vw, 6.8rem);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: -0.01em;
+  line-height: 0.95;
+  color: var(--branco);
+  text-wrap: balance;
 }
 
 .descricaoHero {
-  margin: 0 0 14px 0;
-  font-size: 1.1rem;
-  color: #ffffff;
-  line-height: 1.5;
+  margin: 0 0 22px 0;
+  max-width: 34ch;
+  font-size: clamp(1.05rem, 1.6vw, 1.25rem);
+  color: rgba(255, 255, 255, 0.82);
+  line-height: 1.55;
 }
 
 .etiquetaHero {
-  margin: 0 0 24px 0;
   display: flex;
-  font-size: 0.9rem;
-  color: #ffffff;
+  width: fit-content;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
+  margin: 0 0 36px 0;
+  padding: 8px 16px 8px 14px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--texto);
+  border: 1px solid var(--linha-forte);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
 }
 
+/* Bolinha verde "aberto" com pulso */
 .etiquetaHero::before {
   content: "";
-  display: inline-block;
+  flex-shrink: 0;
   width: 8px;
   height: 8px;
-  background-color: #099b0c;
   border-radius: 50%;
+  background-color: var(--verde);
+  box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.6);
+  animation: pulso 2.2s ease-out infinite;
+}
+
+@keyframes pulso {
+  0% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.55); }
+  70% { box-shadow: 0 0 0 10px rgba(34, 197, 94, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
 }
 
 .botaoAgendamento {
-  display: inline-block;
+  display: inline-flex;
   align-items: center;
-  justify-content: center;
-
+  gap: 12px;
   position: relative;
   z-index: 1;
 
-  background-color: #ffffff;
-  color: #000000;
+  padding: 17px 30px;
+  background-color: var(--branco);
+  color: var(--preto-0);
+  border: 1px solid var(--branco);
+  border-radius: 999px;
   text-decoration: none;
-  font-weight: 600;
-  font-size: 1rem;
-  padding: 14px 32px;
-  border-radius: 12px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
   cursor: pointer;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+  transition:
+    background-color 0.35s ease,
+    color 0.35s ease,
+    transform 0.35s var(--ease-saida),
+    box-shadow 0.35s ease;
+}
+
+.iconeSeta {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: transform 0.35s var(--ease-saida);
 }
 
 .botaoAgendamento:hover {
-  background-color: #000000;
-  color: #ffffff;
+  background-color: transparent;
+  color: var(--branco);
   transform: translateY(-3px);
-  box-shadow: 0 8px 16px rgba(255, 253, 253, 0.658);
+  box-shadow: 0 14px 40px rgba(255, 255, 255, 0.12);
 }
 
-/*INICIO SEÇÃO SOBRE*/
+.botaoAgendamento:hover .iconeSeta {
+  transform: translateX(4px);
+}
+
+/* Indicador de rolagem (linha animada) */
+.indicadorRolagem {
+  position: absolute;
+  left: 50%;
+  bottom: 32px;
+  transform: translateX(-50%);
+  display: block;
+  width: 26px;
+  height: 42px;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  border-radius: 999px;
+  opacity: 0;
+  animation: aparecer 1s ease 1.4s forwards;
+}
+
+.indicadorRolagem span {
+  position: absolute;
+  top: 8px;
+  left: 50%;
+  width: 2px;
+  height: 8px;
+  margin-left: -1px;
+  border-radius: 2px;
+  background: var(--branco);
+  animation: rolar 1.8s ease-in-out infinite;
+}
+
+@keyframes rolar {
+  0% { transform: translateY(0); opacity: 1; }
+  80% { transform: translateY(14px); opacity: 0; }
+  100% { transform: translateY(0); opacity: 0; }
+}
+
+@keyframes aparecer {
+  to { opacity: 1; }
+}
+
+@media (max-width: 560px) {
+  .hero {
+    padding: 110px 6% 110px;
+  }
+  .hero::before {
+    background-position: 72% center;
+  }
+  .hero::after {
+    background: linear-gradient(
+      180deg,
+      rgba(10, 10, 10, 0.75) 0%,
+      rgba(10, 10, 10, 0.82) 60%,
+      var(--preto-0) 100%
+    );
+  }
+}
+
+/* =========================================================
+   SOBRE (carrossel)
+   ========================================================= */
 .secaoSobre {
   position: relative;
   width: 100%;
   height: 100vh;
+  height: 100svh;
+  min-height: 560px;
   overflow: hidden;
-  background-color: #000;
+  background-color: var(--preto-0);
 }
 
 .cartao {
   position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-
+  inset: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
+  overflow: hidden;
 
   opacity: 0;
   visibility: hidden;
   transition:
-    opacity 1s ease-in-out,
-    visibility 1s ease-in-out;
+    opacity 1.2s ease-in-out,
+    visibility 1.2s ease-in-out;
   z-index: 1;
 }
 
+/* Camada da imagem (separada para poder animar o zoom) */
+.cartao::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  transform: scale(1.12);
+  transition: transform 10s linear;
+}
+
+.cartao1::before { background-image: url("../image/sobreimg01.webp"); }
+.cartao2::before { background-image: url("../image/sobreimg02.webp"); }
+.cartao3::before { background-image: url("../image/sobreimg03.webp"); }
+
+/* Película escura + vinheta para dar leitura ao texto */
 .cartao::after {
   content: "";
   position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.5);
+  inset: 0;
   z-index: 2;
-}
-
-.cartao1 {
-  background-image:
-    linear-gradient(rgba(0, 0, 0, 0.752), rgba(0, 0, 0, 0.752)),
-    url("../image/sobreimg01.png");
-}
-.cartao2 {
-  background-image:
-    linear-gradient(rgba(0, 0, 0, 0.752), rgba(0, 0, 0, 0.752)),
-    url("../image/sobreimg02.png");
-}
-
-.cartao3 {
-  background-image:
-    linear-gradient(rgba(0, 0, 0, 0.752), rgba(0, 0, 0, 0.752)),
-    url("../image/sobreimg03.png");
+  background:
+    radial-gradient(ellipse at center, rgba(10, 10, 10, 0.55) 0%, rgba(10, 10, 10, 0.88) 75%),
+    linear-gradient(180deg, var(--preto-0) 0%, transparent 18%, transparent 82%, var(--preto-0) 100%);
 }
 
 .cartao.ativo {
@@ -270,11 +540,15 @@ header.scrolled .logoHeader {
   z-index: 3;
 }
 
+.cartao.ativo::before {
+  transform: scale(1);
+}
+
 .conteudoCartao {
   position: relative;
   z-index: 4;
-  width: 90%;
-  max-width: 800px;
+  width: 88%;
+  max-width: 780px;
   text-align: center;
 }
 
@@ -285,239 +559,370 @@ header.scrolled .logoHeader {
 }
 
 .conteudoCartao h3 {
-  font-size: clamp(3rem, 8vw, 6rem);
-  font-weight: 900;
+  margin-bottom: 18px;
+  font-family: var(--fonte-titulo);
+  font-size: clamp(3.2rem, 10vw, 7.5rem);
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 1px;
-  margin-bottom: 12px;
+  letter-spacing: 0.02em;
+  line-height: 1;
 
   background: linear-gradient(
-    135deg,
-    rgba(255, 255, 255, 0.7) 0%,
-    rgba(255, 255, 255, 0.1) 100%
+    180deg,
+    rgba(255, 255, 255, 0.95) 0%,
+    rgba(255, 255, 255, 0.25) 100%
   );
   background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
-.conteudoCartao p {
-  font-size: 1.2rem;
-  line-height: 1.7;
-  font-weight: 400;
-  color: #f3f4f6;
+/* Linha decorativa entre título e texto */
+.conteudoCartao h3::after {
+  content: "";
+  display: block;
+  width: 48px;
+  height: 1px;
+  margin: 22px auto 0;
+  background: rgba(255, 255, 255, 0.5);
+}
 
+.conteudoCartao p {
+  font-size: clamp(1rem, 1.6vw, 1.2rem);
+  line-height: 1.8;
+  font-weight: 400;
+  color: rgba(243, 244, 246, 0.88);
   text-shadow: 0 4px 15px rgba(0, 0, 0, 0.9);
+  text-wrap: pretty;
 }
 
 .cartao.ativo .conteudoCartao h3 {
   opacity: 1;
   transform: translateY(0);
-  transition: all 0.9s cubic-bezier(0.2, 0.8, 0.2, 1) 0.5s;
+  transition: all 0.9s var(--ease-saida) 0.5s;
 }
 
 .cartao.ativo .conteudoCartao p {
   opacity: 1;
   transform: translateY(0);
-  transition: all 0.9s cubic-bezier(0.2, 0.8, 0.2, 1) 0.8s;
+  transition: all 0.9s var(--ease-saida) 0.8s;
 }
 
 .pontinhos {
   position: absolute;
-  bottom: 40px;
+  bottom: 48px;
   left: 50%;
   transform: translateX(-50%);
   z-index: 10;
-
   display: flex;
-  gap: 12px;
+  gap: 10px;
   align-items: center;
 }
 
+/* Os pontos agora são botões (acessíveis por teclado) */
 .ponto {
+  position: relative;
+  overflow: hidden;
   width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.3);
+  height: 4px;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.28);
   cursor: pointer;
+  transition:
+    width 0.5s var(--ease-saida),
+    background 0.3s ease;
+}
 
-  transition: all 0.5s cubic-bezier(0.25, 1, 0.5, 1);
+.ponto:hover {
+  background: rgba(255, 255, 255, 0.55);
 }
 
 .ponto.ativo {
-  width: 36px;
-  background: rgba(255, 255, 255, 0.95);
-  border-radius: 6px;
-  box-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+  width: 56px;
+  background: rgba(255, 255, 255, 0.22);
 }
 
-/*INICIO SEÇÃO SERVIÇOS*/
-.servicos {
-  background-image:
-    linear-gradient(rgba(0, 0, 0, 0.752), rgba(0, 0, 0, 0.752)),
-    url("../image/serviços.png");
-  background-repeat: no-repeat;
-  background-position: center bottom;
-  background-size: cover;
-  padding: 100px 5%;
-  background-color: #050505;
-  color: #ffffff;
-  position: relative;
-  overflow: hidden;
-}
-
-.servicos::before {
+/* Barra de progresso do slide ativo — ao terminar, o JS troca o slide */
+.ponto::after {
   content: "";
   position: absolute;
-  top: -10%;
-  left: -10%;
-  width: 400px;
-  height: 400px;
-  background: radial-gradient(
-    circle,
-    rgba(37, 211, 102, 0.08) 0%,
-    rgba(0, 0, 0, 0) 70%
-  );
-  border-radius: 50%;
-  z-index: 0;
+  inset: 0;
+  background: var(--branco);
+  transform: scaleX(0);
+  transform-origin: left;
 }
 
-.cabecalhoServicos {
-  text-align: center;
-  margin-bottom: 40px;
-  position: relative;
-  z-index: 2;
+.ponto.ativo::after {
+  animation: progressoSlide 10s linear forwards;
+}
 
-  .tituloServicos {
-    font-size: 45px;
+.secaoSobre.pausado .ponto.ativo::after,
+.secaoSobre.fora .ponto.ativo::after {
+  animation-play-state: paused;
+}
+
+@keyframes progressoSlide {
+  to {
+    transform: scaleX(1);
   }
 }
 
-.gridServicos {
-  display: grid;
-  grid-template-columns: 1fr; /* 1 coluna no celular */
-  gap: 30px;
-  max-width: 1100px;
-  margin: 0 auto;
+/* =========================================================
+   SERVIÇOS
+   ========================================================= */
+.servicos {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  padding: clamp(90px, 12vw, 150px) 6%;
+  color: var(--branco);
+  background:
+    linear-gradient(180deg, var(--preto-0) 0%, rgba(10, 10, 10, 0.86) 20%, rgba(10, 10, 10, 0.86) 80%, var(--preto-0) 100%),
+    url("../image/servicos.webp") center bottom / cover no-repeat;
+  background-color: var(--preto-0);
+}
+
+/* Brilho suave atrás dos cartões */
+.servicos::before {
+  content: "";
+  position: absolute;
+  top: 10%;
+  left: 50%;
+  z-index: -1;
+  width: min(900px, 120vw);
+  height: 600px;
+  transform: translateX(-50%);
+  background: radial-gradient(ellipse, rgba(255, 255, 255, 0.07) 0%, rgba(255, 255, 255, 0) 65%);
+  pointer-events: none;
+}
+
+.cabecalhoServicos {
   position: relative;
   z-index: 2;
+  margin-bottom: clamp(44px, 6vw, 70px);
+  text-align: center;
+}
+
+/* Linhas dos dois lados do minititulo centralizado */
+.cabecalhoServicos .minititulo::after {
+  content: "";
+  width: 36px;
+  height: 1px;
+  background: currentColor;
+  opacity: 0.7;
+}
+
+.tituloServicos {
+  font-family: var(--fonte-titulo);
+  font-size: clamp(2.6rem, 6vw, 4.2rem);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.01em;
+  line-height: 1;
+}
+
+.gridServicos {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: 1fr; /* 1 coluna no celular */
+  gap: 24px;
+  max-width: 1160px;
+  margin: 0 auto;
+  align-items: start;
 }
 
 @media (min-width: 900px) {
   .gridServicos {
-    grid-template-columns: 1fr 1fr;
-    gap: 40px;
+    grid-template-columns: 1.15fr 1fr;
+    gap: 32px;
   }
 }
 
 .cartaoVidro {
-  background: rgba(25, 25, 25, 0.4);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  position: relative;
+  padding: clamp(28px, 4vw, 44px);
+  background: linear-gradient(160deg, rgba(44, 44, 44, 0.55) 0%, rgba(22, 22, 22, 0.55) 100%);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border: 1px solid var(--linha);
   border-radius: 24px;
-  padding: 40px;
-
-  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4);
+  box-shadow:
+    0 30px 60px rgba(0, 0, 0, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
   transition:
-    transform 0.4s ease,
-    border-color 0.4s ease;
+    transform 0.5s var(--ease-saida),
+    border-color 0.5s ease,
+    box-shadow 0.5s ease;
 }
 
 .cartaoVidro:hover {
-  transform: translateY(-5px);
-  border-color: rgba(255, 255, 255, 0.15);
+  transform: translateY(-6px);
+  border-color: var(--linha-forte);
+  box-shadow:
+    0 40px 80px rgba(0, 0, 0, 0.55),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
 
 .cartaoTopo {
   display: flex;
   align-items: center;
-  gap: 15px;
-  margin-bottom: 30px;
-  padding-bottom: 20px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  gap: 16px;
+  margin-bottom: 18px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid var(--linha);
 }
 
 .iconeServico {
-  width: 28px;
-  height: 28px;
-  color: #ffffff;
+  flex-shrink: 0;
+  width: 48px;
+  height: 48px;
+  padding: 12px;
+  color: var(--branco);
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  border: 1px solid var(--linha-forte);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.04);
 }
 
 .cartaoTopo h3 {
-  font-size: 1.8rem;
-  font-weight: 700;
   margin: 0;
-  letter-spacing: 1px;
+  font-family: var(--fonte-titulo);
+  font-size: clamp(1.5rem, 2.6vw, 1.9rem);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
 .listaServicos {
   list-style: none;
-  padding: 0;
-  margin: 0;
   display: flex;
   flex-direction: column;
-  gap: 18px;
 }
 
 .listaServicos li {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  width: 100%;
-  padding: 8px 0;
-  transition: transform 0.3s ease;
+  padding: 16px 12px;
+  margin: 0 -12px;
+  width: calc(100% + 24px);
+  border-radius: 12px;
+  transition:
+    background-color 0.3s ease,
+    transform 0.3s var(--ease-saida);
+}
+
+.listaServicos li + li {
+  border-top: 1px solid rgba(255, 255, 255, 0.04);
 }
 
 .listaServicos li:hover {
-  transform: translateX(5px);
+  background-color: rgba(255, 255, 255, 0.04);
+  transform: translateX(4px);
 }
 
 .infoServico {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 2px;
+  min-width: 0;
 }
 
 .nome {
-  font-size: 1.2rem;
-  font-weight: 500;
-  color: #e5e7eb;
+  font-size: clamp(1rem, 1.4vw, 1.1rem);
+  font-weight: 600;
+  color: var(--texto);
+  line-height: 1.35;
 }
 
 .tempo {
-  font-size: 0.8rem;
-  color: #9ca3af;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--texto-apagado);
   text-transform: uppercase;
-  letter-spacing: 1px;
+  letter-spacing: 0.14em;
+}
+
+/* Pequeno relógio antes do tempo */
+.tempo::before {
+  content: "";
+  width: 10px;
+  height: 10px;
+  border: 1.5px solid currentColor;
+  border-radius: 50%;
+  background:
+    linear-gradient(currentColor, currentColor) 50% 25% / 1.5px 35% no-repeat;
 }
 
 .linhaConectora {
   flex-grow: 1;
-  border-bottom: 1px dashed rgba(255, 255, 255, 0.15);
-  margin: 0 15px;
+  min-width: 20px;
+  margin: 0 16px;
+  border-bottom: 1px dotted rgba(255, 255, 255, 0.22);
   position: relative;
-  top: -8px;
+  top: -6px;
 }
 
 .preco {
-  font-size: 1.1rem;
-  font-weight: 700;
-  color: #ffffff;
+  font-family: var(--fonte-titulo);
+  font-size: clamp(1.2rem, 1.8vw, 1.4rem);
+  font-weight: 500;
+  color: var(--branco);
   white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
 }
 
-/*INICIO SEÇÃO LOCALIZAÇÃO*/
+/* =========================================================
+   ANIMAÇÃO DE ENTRADA AO ROLAR (classe adicionada pelo JS)
+   Só esconde os elementos se o JS estiver ativo (classe .js no <html>)
+   ========================================================= */
+.js [data-revelar] {
+  opacity: 0;
+  transform: translateY(40px);
+  transition:
+    opacity 1s var(--ease-saida),
+    transform 1s var(--ease-saida),
+    border-color 0.5s ease,
+    box-shadow 0.5s ease;
+}
+
+.js [data-revelar].visivel {
+  opacity: 1;
+  transform: none;
+}
+
+.js .gridServicos [data-revelar]:nth-child(2) {
+  transition-delay: 0.15s;
+}
+
+.js .cartaoVidro.visivel:hover {
+  transform: translateY(-6px);
+  transition-delay: 0s;
+}
+
+/* =========================================================
+   LOCALIZAÇÃO
+   ========================================================= */
 #local.local {
-  --local-top: 0px; /* Se o menu for fixo, use a altura dele, por exemplo 72px. */
+  --local-top: 0px; /* O espaço do menu fixo é dado pelo padding-top do .localSticky. */
   --local-percurso: 260svh; /* Maior = mais rolagem para abrir a porta. */
   position: relative;
   display: block;
   padding: 0;
   min-height: 0;
-  color: #fff;
-  background-color: #000000;
+  color: var(--branco);
+  background-color: var(--preto-0);
   isolation: isolate;
   /* Não use overflow: hidden/auto aqui ou em um ancestral do sticky. */
 }
@@ -535,7 +940,8 @@ header.scrolled .logoHeader {
   min-height: calc(100svh - var(--local-top));
   display: grid;
   align-items: center;
-  padding: clamp(16px, 3vw, 48px);
+  /* Em cima: espaço para o menu fixo não cobrir o painel */
+  padding: calc(var(--altura-header) + 8px) 6% clamp(16px, 3vw, 32px);
 }
 
 #local.is-scrubbing {
@@ -549,49 +955,80 @@ header.scrolled .logoHeader {
 
 #local .fundoVidro {
   display: grid;
-  grid-template-columns: minmax(230px, 0.75fr) minmax(0, 2fr);
-  gap: clamp(24px, 3vw, 48px);
+  grid-template-columns: minmax(240px, 0.75fr) minmax(0, 2fr);
+  gap: clamp(24px, 4vw, 56px);
   align-items: center;
   width: 100%;
-  max-width: 1440px;
+  max-width: 1400px;
   margin: 0 auto;
   padding: clamp(20px, 3vw, 40px);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: 24px;
-  background: rgba(20, 20, 20, 0.72);
-  box-shadow: 0 16px 50px rgba(0, 0, 0, 0.35);
+  border: 1px solid var(--linha);
+  border-radius: 28px;
+  background: linear-gradient(160deg, var(--preto-3) 0%, var(--preto-1) 100%);
+  box-shadow:
+    0 40px 80px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
   /* Não desfocar o vídeo: o painel já tem fundo escuro. */
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
-  color: #fff;
+  color: var(--branco);
 }
 
 #local .localInfo {
   min-width: 0;
+  padding-left: clamp(0px, 1vw, 12px);
 }
 
 #local .localEtiqueta {
-  display: block;
-  margin-bottom: 12px;
-  color: #aaa;
-  font-size: 0.7rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+  color: var(--texto-suave);
+  font-size: 0.72rem;
+  font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.18em;
+  letter-spacing: 0.3em;
+}
+
+#local .localEtiqueta::before {
+  content: "";
+  width: 28px;
+  height: 1px;
+  background: currentColor;
+  opacity: 0.7;
 }
 
 #local .localInfo h2 {
-  margin: 0 0 20px;
-  font-size: clamp(1.8rem, 3vw, 2.7rem);
-  font-weight: 600;
-  line-height: 1.15;
-  letter-spacing: -0.03em;
+  margin: 0 0 24px;
+  font-family: var(--fonte-titulo);
+  font-size: clamp(2.2rem, 3.6vw, 3.2rem);
+  font-weight: 700;
+  text-transform: uppercase;
+  line-height: 1;
+  letter-spacing: 0.01em;
 }
 
 #local .endereco {
-  margin: 0 0 28px;
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  margin: 0 0 30px;
   font-size: 1rem;
   line-height: 1.7;
-  color: #ccc;
+  color: #cfcfcf;
+}
+
+#local .iconePino {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  margin-top: 4px;
+  fill: none;
+  stroke: var(--branco);
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 #local .mapaBotoes {
@@ -605,41 +1042,59 @@ header.scrolled .logoHeader {
   justify-content: space-between;
   align-items: center;
   gap: 14px;
-  padding: 14px 18px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.05);
-  color: #fff;
-  font-size: 0.95rem;
-  font-weight: 600;
+  padding: 15px 20px;
+  border: 1px solid var(--linha-forte);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--branco);
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
   text-decoration: none;
   transition:
-    background 0.2s,
-    border-color 0.2s;
+    background 0.3s ease,
+    color 0.3s ease,
+    border-color 0.3s ease;
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
 }
 
+#local .btn.vidro-btn span {
+  transition: transform 0.3s var(--ease-saida);
+}
+
 #local .btn.vidro-btn:hover {
-  background: rgba(255, 255, 255, 0.13);
-  border-color: #aaa;
+  background: var(--branco);
+  color: var(--preto-0);
+  border-color: var(--branco);
+}
+
+#local .btn.vidro-btn:hover span {
+  transform: translate(3px, -3px);
 }
 
 #local .btn.vidro-btn:focus-visible {
-  outline: 2px solid #fff;
+  outline: 2px solid var(--branco);
   outline-offset: 4px;
 }
 
 #local .localVisual {
   min-width: 0;
   margin: 0;
+  /* Limita a altura da imagem à tela (1660/948 ≈ 1.751), para o painel
+     sempre caber na tela e a animação da porta continuar ativa em notebooks. */
+  width: min(100%, calc((100vh - 260px) * 1.751));
+  width: min(100%, calc((100svh - 260px) * 1.751));
+  justify-self: center;
 }
 
 #local .localMedia {
   position: relative;
   aspect-ratio: 1660 / 948;
-  background: #0b0b0b;
-  border-radius: 12px;
+  background: var(--preto-0);
+  border: 1px solid var(--linha);
+  border-radius: 16px;
   overflow: hidden;
 }
 
@@ -665,8 +1120,10 @@ header.scrolled .logoHeader {
 #local .localVisual figcaption {
   margin-top: 14px;
   text-align: right;
-  color: #aaa;
-  font-size: 0.8rem;
+  color: var(--texto-apagado);
+  font-size: 0.78rem;
+  font-weight: 500;
+  letter-spacing: 0.06em;
 }
 
 #local .localDicaAnimada {
@@ -677,47 +1134,111 @@ header.scrolled .logoHeader {
   display: inline;
 }
 
+#local .localDicaAnimada > span {
+  display: inline-block;
+  animation: setaBaixo 1.6s ease-in-out infinite;
+}
+
+@keyframes setaBaixo {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(4px); }
+}
+
 #local.is-scrubbing .localDicaEstatica {
   display: none;
 }
 
 @media (max-width: 768px) {
   #local .localSticky {
-    padding: 16px;
+    padding: calc(var(--altura-header) - 6px) 16px 16px;
   }
   #local .fundoVidro {
     grid-template-columns: 1fr;
     padding: 20px;
     gap: 22px;
+    border-radius: 22px;
   }
   #local .localInfo {
     text-align: center;
+    padding-left: 0;
   }
   #local .localEtiqueta {
     margin-bottom: 8px;
+  }
+  #local .localEtiqueta::before {
+    display: none;
   }
   #local .localInfo h2 {
     margin-bottom: 12px;
   }
   #local .endereco {
+    justify-content: center;
     margin-bottom: 18px;
     font-size: 0.9rem;
     line-height: 1.5;
+  }
+  #local .iconePino {
+    display: none;
   }
   #local .mapaBotoes {
     flex-direction: row;
   }
   #local .btn.vidro-btn {
     flex: 1;
+    justify-content: center;
     padding: 13px 12px;
-    font-size: 0.85rem;
+    font-size: 0.75rem;
   }
   #local .localVisual figcaption {
     text-align: center;
   }
 }
 
+/* =========================================================
+   RODAPÉ
+   ========================================================= */
+footer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+  padding: 56px 6% 44px;
+  text-align: center;
+  background: var(--preto-0);
+  border-top: 1px solid var(--linha);
+}
+
+footer .logoRodape {
+  width: 52px;
+  height: 52px;
+  opacity: 0.85;
+}
+
+footer p {
+  color: var(--texto-apagado);
+  font-size: 0.82rem;
+  letter-spacing: 0.04em;
+}
+
+/* =========================================================
+   MOVIMENTO REDUZIDO (acessibilidade)
+   ========================================================= */
 @media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    transition-delay: 0s !important;
+  }
+  .ponto.ativo::after {
+    animation: none !important;
+    transform: scaleX(1);
+  }
   #local.is-scrubbing {
     min-height: 0;
   }
@@ -726,8 +1247,5 @@ header.scrolled .logoHeader {
   }
   #local .localVideo {
     display: none;
-  }
-  #local .btn.vidro-btn {
-    transition: none;
   }
 }

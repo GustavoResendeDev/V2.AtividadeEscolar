@@ -1,11 +1,4 @@
-/* =========================================================
-   NOVA ERA BARBEARIA — ESTILOS
-   Paleta oficial (image/paleta de cores site.jpg):
-   #0A0A0A  #161616  #1D1C1C  #232323  #2C2C2C  #363636  #454444
-   ========================================================= */
-
 :root {
-  /* Cores da marca */
   --preto-0: #0a0a0a;
   --preto-1: #161616;
   --preto-2: #1d1c1c;
@@ -22,11 +15,9 @@
   --linha-forte: rgba(255, 255, 255, 0.22);
   --verde: #22c55e;
 
-  /* Tipografia */
   --fonte-titulo: "Oswald", "Arial Narrow", Arial, sans-serif;
   --fonte-texto: "Manrope", "Segoe UI", Arial, sans-serif;
 
-  /* Movimento */
   --ease-saida: cubic-bezier(0.2, 0.8, 0.2, 1);
   --altura-header: 70px;
 }
@@ -37,10 +28,8 @@
   box-sizing: border-box;
 }
 
-html {
-  /* Rolagem suave ao clicar nos links do menu (corrigido: "scroll-behavior") */
+html { /* Esse e um comando em testes para suavizar a troca de seções ao clicar no nav presente no header, ainda busco descobrir a melhor forma de aplicar ele na pagina*/
   scroll-behavior: smooth;
-  /* Evita que o header fixo cubra o topo da seção ao navegar */
   scroll-padding-top: var(--altura-header);
   -webkit-text-size-adjust: 100%;
 }
@@ -55,7 +44,6 @@ body {
   text-rendering: optimizeLegibility;
 }
 
-/* Textura sutil de "grão" de filme por cima do site inteiro */
 body::after {
   content: "";
   position: fixed;
@@ -84,12 +72,10 @@ video {
   border-radius: 4px;
 }
 
-/* Barra de rolagem discreta (Chrome/Edge/Firefox) */
 html {
   scrollbar-color: var(--preto-5) var(--preto-0);
 }
 
-/* Título padrão das seções: pequena linha antes do texto */
 .minititulo {
   display: inline-flex;
   align-items: center;
@@ -112,9 +98,6 @@ html {
   opacity: 0.7;
 }
 
-/* =========================================================
-   HEADER
-   ========================================================= */
 header {
   position: fixed;
   top: 0;
@@ -200,7 +183,6 @@ header .menu li a.atual::after {
   transform-origin: bottom left;
 }
 
-/* Estado ao rolar a página (classe adicionada pelo JS) */
 header.scrolled {
   padding: 10px 6%;
   background-color: rgba(10, 10, 10, 0.72);
@@ -239,9 +221,6 @@ header.scrolled .logoHeader {
   }
 }
 
-/* =========================================================
-   HERO
-   ========================================================= */
 .hero {
   position: relative;
   isolation: isolate;
@@ -258,7 +237,6 @@ header.scrolled .logoHeader {
   background-color: var(--preto-0);
 }
 
-/* Imagem de fundo com leve "zoom" de entrada */
 .hero::before {
   content: "";
   position: absolute;
@@ -269,7 +247,6 @@ header.scrolled .logoHeader {
   animation: zoomHero 14s var(--ease-saida) forwards;
 }
 
-/* Escurece mais à esquerda (onde fica o texto) e funde com a próxima seção */
 .hero::after {
   content: "";
   position: absolute;
@@ -297,7 +274,6 @@ header.scrolled .logoHeader {
   width: 100%;
 }
 
-/* Entrada em cascata dos elementos do hero */
 .conteudoHero > * {
   opacity: 0;
   transform: translateY(28px);
@@ -357,7 +333,6 @@ header.scrolled .logoHeader {
   -webkit-backdrop-filter: blur(6px);
 }
 
-/* Bolinha verde "aberto" com pulso */
 .etiquetaHero::before {
   content: "";
   flex-shrink: 0;
@@ -423,7 +398,6 @@ header.scrolled .logoHeader {
   transform: translateX(4px);
 }
 
-/* Indicador de rolagem (linha animada) */
 .indicadorRolagem {
   position: absolute;
   left: 50%;
@@ -477,9 +451,6 @@ header.scrolled .logoHeader {
   }
 }
 
-/* =========================================================
-   SOBRE (carrossel)
-   ========================================================= */
 .secaoSobre {
   position: relative;
   width: 100%;
@@ -506,7 +477,6 @@ header.scrolled .logoHeader {
   z-index: 1;
 }
 
-/* Camada da imagem (separada para poder animar o zoom) */
 .cartao::before {
   content: "";
   position: absolute;
@@ -523,7 +493,6 @@ header.scrolled .logoHeader {
 .cartao2::before { background-image: url("../image/sobreimg02.webp"); }
 .cartao3::before { background-image: url("../image/sobreimg03.webp"); }
 
-/* Película escura + vinheta para dar leitura ao texto */
 .cartao::after {
   content: "";
   position: absolute;
@@ -577,7 +546,6 @@ header.scrolled .logoHeader {
   -webkit-text-fill-color: transparent;
 }
 
-/* Linha decorativa entre título e texto */
 .conteudoCartao h3::after {
   content: "";
   display: block;
@@ -619,7 +587,6 @@ header.scrolled .logoHeader {
   align-items: center;
 }
 
-/* Os pontos agora são botões (acessíveis por teclado) */
 .ponto {
   position: relative;
   overflow: hidden;
@@ -644,7 +611,6 @@ header.scrolled .logoHeader {
   background: rgba(255, 255, 255, 0.22);
 }
 
-/* Barra de progresso do slide ativo — ao terminar, o JS troca o slide */
 .ponto::after {
   content: "";
   position: absolute;
@@ -669,9 +635,6 @@ header.scrolled .logoHeader {
   }
 }
 
-/* =========================================================
-   SERVIÇOS
-   ========================================================= */
 .servicos {
   position: relative;
   overflow: hidden;
@@ -684,7 +647,6 @@ header.scrolled .logoHeader {
   background-color: var(--preto-0);
 }
 
-/* Brilho suave atrás dos cartões */
 .servicos::before {
   content: "";
   position: absolute;
@@ -705,7 +667,6 @@ header.scrolled .logoHeader {
   text-align: center;
 }
 
-/* Linhas dos dois lados do minititulo centralizado */
 .cabecalhoServicos .minititulo::after {
   content: "";
   width: 36px;
@@ -853,7 +814,6 @@ header.scrolled .logoHeader {
   letter-spacing: 0.14em;
 }
 
-/* Pequeno relógio antes do tempo */
 .tempo::before {
   content: "";
   width: 10px;
@@ -883,10 +843,6 @@ header.scrolled .logoHeader {
   letter-spacing: 0.02em;
 }
 
-/* =========================================================
-   ANIMAÇÃO DE ENTRADA AO ROLAR (classe adicionada pelo JS)
-   Só esconde os elementos se o JS estiver ativo (classe .js no <html>)
-   ========================================================= */
 .js [data-revelar] {
   opacity: 0;
   transform: translateY(40px);
@@ -911,11 +867,8 @@ header.scrolled .logoHeader {
   transition-delay: 0s;
 }
 
-/* =========================================================
-   LOCALIZAÇÃO
-   ========================================================= */
 #local.local {
-  --local-top: 0px; /* O espaço do menu fixo é dado pelo padding-top do .localSticky. */
+  --local-top: 0px; /* Se o menu for fixo, use a altura dele, por exemplo 72px. */
   --local-percurso: 260svh; /* Maior = mais rolagem para abrir a porta. */
   position: relative;
   display: block;
@@ -940,7 +893,6 @@ header.scrolled .logoHeader {
   min-height: calc(100svh - var(--local-top));
   display: grid;
   align-items: center;
-  /* Em cima: espaço para o menu fixo não cobrir o painel */
   padding: calc(var(--altura-header) + 8px) 6% clamp(16px, 3vw, 32px);
 }
 
@@ -1082,8 +1034,6 @@ header.scrolled .logoHeader {
 #local .localVisual {
   min-width: 0;
   margin: 0;
-  /* Limita a altura da imagem à tela (1660/948 ≈ 1.751), para o painel
-     sempre caber na tela e a animação da porta continuar ativa em notebooks. */
   width: min(100%, calc((100vh - 260px) * 1.751));
   width: min(100%, calc((100svh - 260px) * 1.751));
   justify-self: center;
@@ -1194,9 +1144,6 @@ header.scrolled .logoHeader {
   }
 }
 
-/* =========================================================
-   RODAPÉ
-   ========================================================= */
 footer {
   display: flex;
   flex-direction: column;
@@ -1220,9 +1167,6 @@ footer p {
   letter-spacing: 0.04em;
 }
 
-/* =========================================================
-   MOVIMENTO REDUZIDO (acessibilidade)
-   ========================================================= */
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;

@@ -1,11 +1,7 @@
-/* =========================================================
-   HEADER, MENU ATIVO E ANIMAÇÕES DE ENTRADA
-   ========================================================= */
 document.addEventListener("DOMContentLoaded", () => {
   const header = document.querySelector("header");
   const linksMenu = document.querySelectorAll(".menu a[href^='#']");
 
-  // Header com fundo de vidro depois de rolar um pouco
   function atualizarHeader() {
     header.classList.toggle("scrolled", window.scrollY > 40);
   }
@@ -19,7 +15,6 @@ document.addEventListener("DOMContentLoaded", () => {
     return;
   }
 
-  // Destaca no menu a seção que está na tela
   const secoes = [...linksMenu]
     .map((link) => document.querySelector(link.getAttribute("href")))
     .filter(Boolean);
@@ -40,7 +35,6 @@ document.addEventListener("DOMContentLoaded", () => {
   );
   secoes.forEach((secao) => observadorMenu.observe(secao));
 
-  // Remove o destaque quando volta para o topo (hero)
   window.addEventListener(
     "scroll",
     () => {
@@ -51,7 +45,6 @@ document.addEventListener("DOMContentLoaded", () => {
     { passive: true },
   );
 
-  // Elementos com [data-revelar] aparecem ao entrar na tela
   const observadorRevelar = new IntersectionObserver(
     (entradas, obs) => {
       entradas.forEach((entrada) => {
@@ -68,11 +61,6 @@ document.addEventListener("DOMContentLoaded", () => {
     .forEach((el) => observadorRevelar.observe(el));
 });
 
-/* =========================================================
-   CARROSSEL DA SEÇÃO SOBRE
-   A troca automática acontece quando a barrinha de progresso
-   do ponto ativo termina de encher (animação CSS de 10s).
-   ========================================================= */
 document.addEventListener("DOMContentLoaded", () => {
   const secao = document.querySelector(".secaoSobre");
   const cartoes = document.querySelectorAll(".cartao");
@@ -91,7 +79,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
     indexAtual = (index + totalSlides) % totalSlides;
 
-    // Força o navegador a reiniciar a animação da barrinha
     void pontos[indexAtual].offsetWidth;
 
     cartoes[indexAtual].classList.add("ativo");
@@ -102,7 +89,6 @@ document.addEventListener("DOMContentLoaded", () => {
     irParaSlide(indexAtual + 1);
   }
 
-  // Avança quando a barrinha termina
   pontos.forEach((ponto) => {
     ponto.addEventListener("animationend", (e) => {
       if (e.animationName === "progressoSlide" && ponto.classList.contains("ativo")) {
@@ -111,7 +97,6 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
-  // Com "movimento reduzido" não há barrinha animada: usa um temporizador
   function reiniciarTemporizador() {
     clearInterval(temporizadorAnimacao);
     if (movimentoReduzido.matches) {
@@ -126,7 +111,6 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
-  // Teclado: setas esquerda/direita quando o foco está nos pontos
   secao.addEventListener("keydown", (e) => {
     if (e.key !== "ArrowRight" && e.key !== "ArrowLeft") return;
     irParaSlide(indexAtual + (e.key === "ArrowRight" ? 1 : -1));
@@ -134,7 +118,6 @@ document.addEventListener("DOMContentLoaded", () => {
     reiniciarTemporizador();
   });
 
-  // Arrastar no celular
   let toqueInicioX = null;
   secao.addEventListener(
     "touchstart",
@@ -150,13 +133,11 @@ document.addEventListener("DOMContentLoaded", () => {
     reiniciarTemporizador();
   });
 
-  // Pausa com o mouse em cima (só em computadores)
   if (matchMedia("(hover: hover)").matches) {
     secao.addEventListener("mouseenter", () => secao.classList.add("pausado"));
     secao.addEventListener("mouseleave", () => secao.classList.remove("pausado"));
   }
 
-  // Pausa enquanto a seção não está visível na tela
   if ("IntersectionObserver" in window) {
     new IntersectionObserver(
       ([entrada]) => secao.classList.toggle("fora", !entrada.isIntersecting),
@@ -167,8 +148,6 @@ document.addEventListener("DOMContentLoaded", () => {
   movimentoReduzido.addEventListener("change", reiniciarTemporizador);
   reiniciarTemporizador();
 });
-
-/* Scroll Linked seção endereço */
 
 (() => {
   "use strict";

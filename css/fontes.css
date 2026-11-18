@@ -1,0 +1,18 @@
+/* Fontes hospedadas no próprio site (sem requisição ao Google Fonts).
+   Assim o IP do visitante não é enviado a terceiros (LGPD, art. 6º, III) e a página carrega mais rápido.
+   Manrope e Oswald: SIL Open Font License 1.1. Subconjunto "latin" (cobre o português). */
+@font-face {
+  font-family: "Manrope";
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url("../fonts/manrope-latin.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Oswald";
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url("../fonts/oswald-latin.woff2") format("woff2");
+}

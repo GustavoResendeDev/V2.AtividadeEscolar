@@ -5,15 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#0a0a0a" />
     <title>Nova Era Barbearia</title>
+    <meta
+      name="description"
+      content="Nova Era Barbearia em Goiânia: corte, barba e coloração. Segunda a sábado, das 8h às 19h. Agende pelo WhatsApp."
+    />
     <link rel="icon" type="image/png" sizes="64x64" href="image/favicon-64.png" />
     <link rel="apple-touch-icon" href="image/apple-touch-icon.png" />
 
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      rel="stylesheet"
-      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Oswald:wght@400;500;600;700&display=swap"
-    />
+    <link rel="preload" href="fonts/oswald-latin.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="fonts/manrope-latin.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="stylesheet" href="./css/fontes.css" />
 
     <link rel="preload" as="image" href="image/herosectionimg.webp" type="image/webp" />
 
@@ -23,9 +24,9 @@
     </script>
     <script src="./js/script.js" defer></script>
   </head>
-  <body>
+  <body id="topo">
     <header>
-      <a href="#" class="logoLink" aria-label="Nova Era Barbearia - início">
+      <a href="#topo" class="logoLink" aria-label="Nova Era Barbearia - início">
         <img
           src="image/logo.webp"
           alt="Logo da Nova Era Barbearia"
@@ -47,23 +48,27 @@
     <main>
       <section class="hero">
         <div class="conteudoHero">
-          <h4 class="minititulo">Agende seu horário</h4>
+          <p class="minititulo">Agende seu horário</p>
           <h1 class="tituloHero">Nova Era Barbearia</h1>
           <p class="descricaoHero">
             Atendimento personalizado e de alta qualidade.
           </p>
-          <p class="etiquetaHero">Segunda a Sábado das 8h às 19h</p>
+          <p class="etiquetaHero" id="statusFuncionamento">
+            <span class="somenteLeitor" id="statusTexto"></span>
+            Segunda a sábado, das 8h às 19h
+          </p>
           <a
             class="botao botaoAgendamento"
-            href="https://www.trinks.com/barbearia-nova-era-62-?utm_source=ig&utm_medium=social&utm_content=link_in_bio&fbclid=PAZXh0bgNhZW0CMTEAcGRvZgJzcnRjBmFwcF9pZA85MzY2MTk3NDMzOTI0NTkAAadV6ShLZ3OHWqOPwN495uRkF5Y8u0kiPFi_ShS0N8qEhF-La814PRsT0XS1Og_aem_akpqaKaGHKB4okRDmL7m1Q"
+            href="https://wa.me/5562993548184?text=Ol%C3%A1%2C%20Nova%20Era%20Barbearia%21%20Gostaria%20de%20agendar%20um%20hor%C3%A1rio.%0A%0A%2ANome%3A%2A%20%0A%2AServi%C3%A7o%3A%2A%20%0A%2AData%3A%2A%20%0A%2AHor%C3%A1rio%3A%2A%20%0A%2ABarbeiro%3A%2A%20"
             target="_blank"
             rel="noopener noreferrer"
-            >Agendar Agora</a
+            >Agendar pelo WhatsApp</a
           >
         </div>
       </section>
 
-      <section class="secaoSobre" id="sobre" aria-roledescription="carrossel">
+      <section class="secaoSobre" id="sobre" aria-roledescription="carrossel" aria-labelledby="sobreTitulo">
+        <h2 class="somenteLeitor" id="sobreTitulo">Sobre nós</h2>
         <div class="cartao cartao1 ativo">
           <div class="conteudoCartao">
             <h3>O Início</h3>
@@ -112,7 +117,7 @@
 
       <section class="servicos" id="servicos">
         <div class="cabecalhoServicos" data-revelar>
-          <h4 class="minititulo">Nossa Especialidade</h4>
+          <p class="minititulo">Nossa Especialidade</p>
           <h2 class="tituloServicos">Menu de Serviços</h2>
         </div>
 
@@ -304,7 +309,16 @@
         height="256"
         loading="lazy"
       />
-      <p>&copy; 2024 Nova Era Barbearia. Todos os direitos reservados.</p>
+      <p>&copy; 2026 Nova Era Barbearia. Todos os direitos reservados.</p>
+      <nav class="rodapeLinks" aria-label="Links do rodapé">
+        <a href="privacidade.html">Política de Privacidade</a>
+        <a
+          href="https://wa.me/5562993548184"
+          target="_blank"
+          rel="noopener noreferrer"
+          >WhatsApp (62) 99354-8184</a
+        >
+      </nav>
     </footer>
   </body>
 </html>

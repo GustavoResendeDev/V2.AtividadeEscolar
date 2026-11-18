@@ -1,3 +1,9 @@
+/* Agendamento pelo WhatsApp.
+   O formulário não envia nada para servidor nenhum: monta uma mensagem formatada
+   e abre o WhatsApp da barbearia com ela pronta. Nenhum dado fica guardado no site.
+   Usa FUNCIONAMENTO, agoraEmBrasilia() e eFeriado(), definidos em script.js. */
+const WHATSAPP_BARBEARIA = "5562993548184";
+
 document.addEventListener("DOMContentLoaded", () => {
   const form = document.querySelector("#formAgendamento");
   const confirmacao = document.querySelector("#confirmacao");
@@ -5,55 +11,70 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const campoData = form.elements.data;
   const campoHora = form.elements.hora;
+  const campoServico = form.elements.servico;
 
+  const doisDigitos = (n) => String(n).padStart(2, "0");
+
+  // "Hoje" sempre no horário de Brasília, não no fuso de quem acessa.
   function hojeISO() {
-    const d = new Date();
-    d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
-    return d.toISOString().slice(0, 10);
+    const { ano, mes, dia } = agoraEmBrasilia();
+    return `${ano}-${doisDigitos(mes)}-${doisDigitos(dia)}`;
   }
   campoData.min = hojeISO();
 
+  function paraMinutos(hhmm) {
+    const [h, m] = hhmm.split(":").map(Number);
+    return h * 60 + m;
+  }
+
+  function paraHora(minutos) {
+    return `${doisDigitos(Math.floor(minutos / 60))}:${doisDigitos(minutos % 60)}`;
+  }
+
+  function duracaoServico() {
+    const opcao = campoServico.selectedOptions[0];
+    return Number(opcao?.dataset.duracao) || 0;
+  }
+
   function mensagemErro(nome) {
     const campo = form.elements[nome];
-    const valor = nome === "barbeiro" ? campo.value : campo.value.trim();
 
     switch (nome) {
-      case "nome":
+      case "nome": {
+        const valor = campo.value.trim();
         if (!valor) return "Informe seu nome.";
         if (valor.length < 3) return "O nome precisa ter pelo menos 3 letras.";
         return "";
-      case "idade": {
-        if (!valor) return "Informe sua idade.";
-        const idade = Number(valor);
-        if (!Number.isInteger(idade) || idade < 1 || idade > 120)
-          return "Digite uma idade válida.";
-        return "";
       }
-      case "email":
-        if (!valor) return "Informe seu e-mail.";
-        if (campo.validity.typeMismatch || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(valor))
-          return "Digite um e-mail válido.";
-        return "";
+      case "servico":
+        return campo.value ? "" : "Escolha um serviço.";
       case "data": {
+        const valor = campo.value;
         if (!valor) return "Escolha uma data.";
-        if (valor < campoData.min) return "Escolha uma data a partir de hoje.";
+        if (valor < hojeISO()) return "Escolha uma data a partir de hoje.";
         const [ano, mes, dia] = valor.split("-").map(Number);
-        if (new Date(ano, mes - 1, dia).getDay() === 0)
-          return "Não abrimos aos domingos.";
+        const diaSemana = new Date(Date.UTC(ano, mes - 1, dia)).getUTCDay();
+        if (!FUNCIONAMENTO.diasAbertos.includes(diaSemana)) return "Não abrimos aos domingos.";
+        if (eFeriado(ano, mes, dia)) return "Estaremos fechados nesse dia (feriado).";
         return "";
       }
       case "hora": {
+        const valor = campo.value;
         if (!valor) return "Escolha um horário.";
-        if (campoData.value === hojeISO()) {
-          const [h, m] = valor.split(":").map(Number);
-          const agora = new Date();
-          if (h * 60 + m <= agora.getHours() * 60 + agora.getMinutes())
-            return "Esse horário já passou. Escolha outro.";
+        const inicio = paraMinutos(valor);
+        if (campoData.value === hojeISO() && inicio <= agoraEmBrasilia().minutos)
+          return "Esse horário já passou. Escolha outro.";
+        const duracao = duracaoServico();
+        if (duracao && inicio + duracao > FUNCIONAMENTO.fecha) {
+          const ultimo = Math.floor((FUNCIONAMENTO.fecha - duracao) / 30) * 30; // horários de 30 em 30 min
+          return `Esse serviço termina depois das 19h. Escolha um horário até ${paraHora(ultimo)}.`;
         }
         return "";
       }
       case "barbeiro":
-        return valor ? "" : "Escolha um barbeiro.";
+        return campo.value ? "" : "Escolha um barbeiro.";
+      case "consentimento":
+        return campo.checked ? "" : "Para agendar, aceite a Política de Privacidade.";
     }
     return "";
   }
@@ -72,13 +93,14 @@ document.addEventListener("DOMContentLoaded", () => {
     return !msg;
   }
 
-  const nomesCampos = ["nome", "idade", "email", "data", "hora", "barbeiro"];
+  const nomesCampos = ["nome", "servico", "data", "hora", "barbeiro", "consentimento"];
 
   nomesCampos.forEach((nome) => {
     const caixa = caixaDoCampo(nome);
     caixa.addEventListener("focusout", (e) => {
       if (nome === "barbeiro" && caixa.contains(e.relatedTarget)) return;
-      if (form.dataset.tentou || form.elements[nome].value) validar(nome);
+      const preenchido = nome === "consentimento" ? false : form.elements[nome].value;
+      if (form.dataset.tentou || preenchido) validar(nome);
     });
     caixa.addEventListener("input", () => {
       if (caixa.classList.contains("temErro")) validar(nome);
@@ -88,29 +110,56 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
-  campoData.addEventListener("change", () => {
-    if (campoHora.value) validar("hora");
-  });
+  // Data ou serviço mudam o que é um horário válido.
+  [campoData, campoServico].forEach((campo) =>
+    campo.addEventListener("change", () => {
+      if (campoHora.value) validar("hora");
+    })
+  );
 
   function formatarData(iso) {
     const [ano, mes, dia] = iso.split("-").map(Number);
-    return new Date(ano, mes - 1, dia).toLocaleDateString("pt-BR", {
-      weekday: "long",
-      day: "2-digit",
-      month: "long",
-    });
+    const data = new Date(Date.UTC(ano, mes - 1, dia));
+    const semana = data.toLocaleDateString("pt-BR", { weekday: "long", timeZone: "UTC" });
+    return `${semana}, ${doisDigitos(dia)}/${doisDigitos(mes)}/${ano}`;
   }
 
-  function mostrarConfirmacao(dados) {
+  // Mensagem no formato do WhatsApp: *negrito* e _itálico_.
+  function montarMensagem(dados) {
+    const opcao = campoServico.selectedOptions[0];
+    const duracao = Number(opcao.dataset.duracao);
+    const termino = paraHora(paraMinutos(dados.hora) + duracao);
+
+    return [
+      "*NOVO AGENDAMENTO* ✂️",
+      "_Nova Era Barbearia_",
+      "",
+      `👤 *Cliente:* ${dados.nome}`,
+      `💈 *Serviço:* ${dados.servico}`,
+      `💰 *Valor:* R$ ${opcao.dataset.preco}`,
+      `📅 *Data:* ${formatarData(dados.data)}`,
+      `⏰ *Horário:* ${dados.hora} às ${termino}`,
+      `🧔 *Barbeiro:* ${dados.barbeiro}`,
+      "",
+      "Aguardo a confirmação. Obrigado!",
+      "",
+      "_Enviado pelo site. Dados tratados conforme a Política de Privacidade (LGPD)._",
+    ].join("\n");
+  }
+
+  function linkWhatsapp(mensagem) {
+    return `https://wa.me/${WHATSAPP_BARBEARIA}?text=${encodeURIComponent(mensagem)}`;
+  }
+
+  function mostrarConfirmacao(dados, link) {
     const primeiroNome = dados.nome.split(" ")[0];
     confirmacao.querySelector(".confirmacaoTexto").textContent =
-      `Tudo certo, ${primeiroNome}! Enviaremos os detalhes para ${dados.email}.`;
+      `${primeiroNome}, sua mensagem abriu no WhatsApp. Toque em enviar por lá; o horário fica reservado quando a barbearia confirmar.`;
 
     const resumo = confirmacao.querySelector(".resumo");
     resumo.replaceChildren();
     [
-      ["Nome", dados.nome],
-      ["Idade", `${dados.idade} anos`],
+      ["Serviço", dados.servico],
       ["Data", formatarData(dados.data)],
       ["Horário", dados.hora],
       ["Barbeiro", dados.barbeiro],
@@ -124,6 +173,7 @@ document.addEventListener("DOMContentLoaded", () => {
       resumo.append(linha);
     });
 
+    confirmacao.querySelector("#abrirWhatsapp").href = link;
     form.hidden = true;
     confirmacao.hidden = false;
     confirmacao.focus();
@@ -141,9 +191,14 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     const dados = Object.fromEntries(new FormData(form));
-    dados.nome = dados.nome.trim();
-    dados.email = dados.email.trim();
-    mostrarConfirmacao(dados);
+    dados.nome = dados.nome.trim().replace(/\s+/g, " ");
+    const link = linkWhatsapp(montarMensagem(dados));
+
+    // Abre em nova aba; se o navegador bloquear, abre na mesma.
+    const janela = window.open(link, "_blank");
+    if (janela) janela.opener = null;
+    else window.location.href = link;
+    mostrarConfirmacao(dados, link);
   });
 
   document.querySelector("#novoAgendamento").addEventListener("click", () => {

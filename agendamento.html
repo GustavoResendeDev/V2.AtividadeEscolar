@@ -8,12 +8,9 @@
     <link rel="icon" type="image/png" sizes="64x64" href="image/favicon-64.png" />
     <link rel="apple-touch-icon" href="image/apple-touch-icon.png" />
 
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      rel="stylesheet"
-      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Oswald:wght@400;500;600;700&display=swap"
-    />
+    <link rel="preload" href="fonts/oswald-latin.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="fonts/manrope-latin.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="stylesheet" href="./css/fontes.css" />
 
     <link rel="stylesheet" href="./css/style.css" />
     <link rel="stylesheet" href="./css/agendamento.css" />
@@ -46,16 +43,20 @@
 
     <main class="agendamento">
       <div class="agendamentoInfo">
-        <h4 class="minititulo">Reserve seu horário</h4>
+        <p class="minititulo">Reserve seu horário</p>
         <h1 class="agendamentoTitulo">Agendamento</h1>
         <p class="agendamentoTexto">
-          Preencha os dados ao lado, escolha o dia, o horário e o barbeiro de
-          sua preferência.
+          Escolha o serviço, o dia, o horário e o barbeiro. A mensagem chega
+          pronta no WhatsApp da barbearia.
         </p>
         <dl class="agendamentoDetalhes">
           <div>
             <dt>Funcionamento</dt>
             <dd>Segunda a sábado, das 8h às 19h</dd>
+          </div>
+          <div>
+            <dt>WhatsApp</dt>
+            <dd><a href="https://wa.me/5562993548184" target="_blank" rel="noopener noreferrer">(62) 99354-8184</a></dd>
           </div>
           <div>
             <dt>Endereço</dt>
@@ -80,34 +81,25 @@
             <span class="erroCampo" aria-live="polite"></span>
           </div>
 
-          <div class="linhaCampos">
-            <div class="campo campoIdade">
-              <label for="idade">Idade</label>
-              <input
-                type="number"
-                id="idade"
-                name="idade"
-                inputmode="numeric"
-                min="1"
-                max="120"
-                placeholder="Ex.: 25"
-                required
-              />
-              <span class="erroCampo" aria-live="polite"></span>
-            </div>
-
-            <div class="campo">
-              <label for="email">E-mail</label>
-              <input
-                type="email"
-                id="email"
-                name="email"
-                autocomplete="email"
-                placeholder="voce@email.com"
-                required
-              />
-              <span class="erroCampo" aria-live="polite"></span>
-            </div>
+          <div class="campo">
+            <label for="servico">Serviço</label>
+            <select id="servico" name="servico" required>
+              <option value="" disabled selected>Selecione o serviço</option>
+              <optgroup label="Cabelo">
+                <option value="Corte Masculino" data-duracao="60" data-preco="40">Corte Masculino · 1h · R$ 40</option>
+                <option value="Corte e Barba" data-duracao="60" data-preco="75">Corte e Barba · 1h · R$ 75</option>
+                <option value="Camuflagem de Cabelos Brancos" data-duracao="140" data-preco="120">Camuflagem de Cabelos Brancos · 2h20 · R$ 120</option>
+                <option value="Coloração / Tonalização" data-duracao="120" data-preco="120">Coloração / Tonalização · 2h · R$ 120</option>
+                <option value="Hidratação" data-duracao="30" data-preco="30">Hidratação · 30min · R$ 30</option>
+                <option value="Higienização + Secagem" data-duracao="20" data-preco="20">Higienização + Secagem · 20min · R$ 20</option>
+              </optgroup>
+              <optgroup label="Barba e Bigode">
+                <option value="Barba Tradicional / Modelada" data-duracao="30" data-preco="35">Barba Tradicional / Modelada · 30min · R$ 35</option>
+                <option value="Barba com Máquina" data-duracao="30" data-preco="35">Barba com Máquina · 30min · R$ 35</option>
+                <option value="Bigode Modelado" data-duracao="30" data-preco="35">Bigode Modelado · 30min · R$ 35</option>
+              </optgroup>
+            </select>
+            <span class="erroCampo" aria-live="polite"></span>
           </div>
 
           <div class="linhaCampos">
@@ -175,18 +167,36 @@
             <span class="erroCampo" aria-live="polite"></span>
           </fieldset>
 
-          <button type="submit" class="botao botaoEnviar">Confirmar agendamento</button>
+          <div class="campo campoConsentimento">
+            <label class="consentimento">
+              <input type="checkbox" id="consentimento" name="consentimento" required />
+              <span>
+                Li e concordo com a
+                <a href="privacidade.html" target="_blank" rel="noopener">Política de Privacidade</a>.
+                Meus dados serão usados apenas para este agendamento.
+              </span>
+            </label>
+            <span class="erroCampo" aria-live="polite"></span>
+          </div>
+
+          <button type="submit" class="botao botaoEnviar">Enviar pelo WhatsApp</button>
+          <p class="avisoEnvio">
+            Ao enviar, o WhatsApp abre com a mensagem pronta para a barbearia. O horário
+            fica reservado quando a equipe confirmar por lá.
+          </p>
         </form>
 
         <div class="confirmacao" id="confirmacao" hidden tabindex="-1">
-          <h2>Agendamento confirmado</h2>
+          <h2>Mensagem pronta</h2>
           <p class="confirmacaoTexto"></p>
           <dl class="resumo"></dl>
           <div class="confirmacaoBotoes">
+            <a class="botao" id="abrirWhatsapp" href="https://wa.me/5562993548184" target="_blank" rel="noopener noreferrer">
+              Abrir WhatsApp de novo
+            </a>
             <button type="button" class="botao botaoContorno" id="novoAgendamento">
               Novo agendamento
             </button>
-            <a href="index.html" class="botao">Voltar ao início</a>
           </div>
         </div>
       </div>
@@ -201,7 +211,16 @@
         height="256"
         loading="lazy"
       />
-      <p>&copy; 2024 Nova Era Barbearia. Todos os direitos reservados.</p>
+      <p>&copy; 2026 Nova Era Barbearia. Todos os direitos reservados.</p>
+      <nav class="rodapeLinks" aria-label="Links do rodapé">
+        <a href="privacidade.html">Política de Privacidade</a>
+        <a
+          href="https://wa.me/5562993548184"
+          target="_blank"
+          rel="noopener noreferrer"
+          >WhatsApp (62) 99354-8184</a
+        >
+      </nav>
     </footer>
   </body>
 </html>

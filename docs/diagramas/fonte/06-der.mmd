@@ -4,6 +4,8 @@ erDiagram
   BARBEIROS ||--o{ AGENDAMENTOS : "atende"
   BARBEIROS |o--o| USUARIOS : "tem login"
   USUARIOS ||--o{ SESSOES : "abre"
+  AGENDAMENTOS ||--|{ AGENDAMENTO_SERVICOS : "inclui"
+  SERVICOS ||--o{ AGENDAMENTO_SERVICOS : "compõe"
   AGENDAMENTOS ||--|{ HISTORICO_STATUS : "registra"
   USUARIOS |o--o{ HISTORICO_STATUS : "altera"
   CLIENTES {
@@ -35,9 +37,16 @@ erDiagram
     text data
     int inicio_min
     int fim_min
-    int preco_centavos
+    int preco_centavos "soma dos serviços"
     text status
     text consentimento_em
+  }
+  AGENDAMENTO_SERVICOS {
+    int agendamento_id PK,FK
+    int servico_id PK,FK
+    int ordem
+    int duracao_min
+    int preco_centavos
   }
   USUARIOS {
     int id PK

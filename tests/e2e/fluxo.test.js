@@ -90,16 +90,54 @@ test("cliente agenda e o barbeiro confirma no painel", { skip: !playwright && "P
   await pagina.click(".botaoEnviar");
   await pagina.waitForURL(/painel\.html/);
 
-  // 4. Painel: encontra o atendimento e confirma
-  await pagina.goto(`${base}/admin/painel.html?data=${DATA}`);
+  // 4. Painel (lista): encontra o atendimento e confirma
+  await pagina.goto(`${base}/admin/painel.html?data=${DATA}&modo=dia&aba=lista`);
   const item = pagina.locator(".atendimento", { hasText: "Lucas Ferreira" });
   await item.waitFor();
   assert.equal(await item.getAttribute("data-status"), "pendente");
   await item.getByRole("button", { name: /Confirmar/ }).click();
   await pagina.waitForSelector('.atendimento[data-status="confirmado"]');
   assert.equal(await pagina.textContent("#indConfirmados"), "1");
+  await pagina.locator(".atendimento", { hasText: "Lucas Ferreira" }).getByRole("button", { name: /Concluir/ }).click();
+  await pagina.waitForSelector('.atendimento[data-status="concluido"]');
 
-  // 5. Sair encerra a sessão
+  // 5. Calendário: clicar num horário vazio abre o agendamento manual já preenchido
+  await pagina.goto(`${base}/admin/painel.html?data=${DATA}&modo=dia&aba=calendario`);
+  await pagina.waitForSelector(".colunaDia .slot");
+  await pagina.evaluate(() => {
+    const rolagem = document.getElementById("calendarioRolagem");
+    rolagem.scrollTop = 0;
+    window.scrollTo(0, rolagem.getBoundingClientRect().top + window.scrollY - 80);
+  });
+  await pagina.click('.colunaDia[data-barbeiro="1"] .slot[data-hora="09:00"]');
+  assert.equal(await pagina.inputValue("#novoData"), DATA);
+  assert.equal(await pagina.inputValue("#novoHora"), "09:00");
+  assert.equal(await pagina.inputValue("#novoBarbeiro"), "1");
+  await pagina.fill("#novoNome", "Marcos Balcão");
+  await pagina.click("#salvarNovo");
+  const evento = pagina.locator('.colunaDia[data-barbeiro="1"] .evento', { hasText: "Marcos Balcão" });
+  await evento.waitFor();
+
+  // 6. Arrastar o atendimento para outro barbeiro e horário
+  const origem = await evento.boundingBox();
+  const alvo = await pagina.locator('.colunaDia[data-barbeiro="2"] .slot[data-hora="11:00"]').boundingBox();
+  await pagina.mouse.move(origem.x + 20, origem.y + 10);
+  await pagina.mouse.down();
+  await pagina.mouse.move(origem.x + 60, origem.y + 40, { steps: 5 });
+  await pagina.mouse.move(alvo.x + 20, alvo.y + 10, { steps: 10 });
+  await pagina.mouse.up();
+  const movido = pagina.locator('.colunaDia[data-barbeiro="2"] .evento', { hasText: "Marcos Balcão" });
+  await movido.waitFor();
+  assert.match(await movido.getAttribute("aria-label"), /^11:00 a 12:00/);
+
+  // 7. Relatório: quantas pessoas cada barbeiro atendeu no dia
+  await pagina.click("#abrirRelatorio");
+  await pagina.waitForSelector("#resultadoRelatorio:not([hidden])");
+  const linhaCaio = pagina.locator("#corpoRelatorio tr", { hasText: "Caio Henrique" });
+  assert.equal((await linhaCaio.locator("td").first().textContent()).trim(), "1");
+  await pagina.keyboard.press("Escape");
+
+  // 8. Sair encerra a sessão
   await pagina.click("#sair");
   await pagina.waitForURL(/admin\/(index\.html)?$/);
 

@@ -23,86 +23,287 @@
         <span>Painel <strong>Nova Era</strong></span>
       </a>
       <div class="usuarioPainel">
+        <button type="button" class="botao botaoContorno botaoPequeno botaoIcone" id="abrirRelatorio">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2" /></svg>
+          <span>Relatório</span>
+        </button>
         <span class="nomeUsuario" id="nomeUsuario"></span>
         <button type="button" class="botao botaoContorno botaoPequeno" id="sair">Sair</button>
       </div>
     </header>
 
     <main class="painel" id="painel" aria-busy="true">
+      <!-- Título do período e navegação -->
       <div class="topoPainel">
         <div>
-          <p class="minititulo">Agenda do dia</p>
+          <p class="minititulo" id="rotuloPeriodo">Agenda do dia</p>
           <h1 class="tituloPainel" id="tituloData">Agenda</h1>
         </div>
-        <div class="navegacaoData" role="group" aria-label="Escolher o dia">
-          <button type="button" class="botao botaoContorno botaoPequeno" id="diaAnterior" aria-label="Dia anterior">←</button>
+        <div class="navegacaoData" role="group" aria-label="Escolher o período">
+          <button type="button" class="botao botaoContorno botaoPequeno" id="diaAnterior" aria-label="Período anterior">←</button>
           <button type="button" class="botao botaoContorno botaoPequeno" id="hoje">Hoje</button>
-          <button type="button" class="botao botaoContorno botaoPequeno" id="proximoDia" aria-label="Próximo dia">→</button>
+          <button type="button" class="botao botaoContorno botaoPequeno" id="proximoDia" aria-label="Próximo período">→</button>
           <label class="somenteLeitor" for="dataPainel">Data</label>
           <input type="date" id="dataPainel" class="entradaPainel" />
         </div>
       </div>
 
-      <section class="indicadores" aria-label="Resumo do dia">
+      <!-- Barra de ferramentas: visão, período, filtros e novo agendamento -->
+      <div class="barraPainel">
+        <div class="seletores">
+          <div class="segmentado" role="tablist" aria-label="Forma de visualizar">
+            <button type="button" role="tab" class="opcaoSegmento" data-aba="calendario" id="abaCalendario" aria-controls="vistaCalendario">Calendário</button>
+            <button type="button" role="tab" class="opcaoSegmento" data-aba="lista" id="abaLista" aria-controls="vistaLista">Lista</button>
+          </div>
+          <div class="segmentado" role="group" aria-label="Período">
+            <button type="button" class="opcaoSegmento" data-modo="dia" aria-pressed="false">Dia</button>
+            <button type="button" class="opcaoSegmento" data-modo="semana" aria-pressed="false">Semana</button>
+            <button type="button" class="opcaoSegmento" data-modo="mes" aria-pressed="false">Mês</button>
+          </div>
+        </div>
+        <div class="filtrosPainel">
+          <div class="campo" id="caixaFiltroBarbeiro">
+            <label for="filtroBarbeiro">Barbeiro</label>
+            <select id="filtroBarbeiro">
+              <option value="">Todos</option>
+            </select>
+          </div>
+          <div class="campo">
+            <label for="filtroStatus">Situação</label>
+            <select id="filtroStatus">
+              <option value="">Todas</option>
+              <option value="pendente">A confirmar</option>
+              <option value="confirmado">Confirmado</option>
+              <option value="concluido">Concluído</option>
+              <option value="faltou">Faltou</option>
+              <option value="cancelado">Cancelado</option>
+            </select>
+          </div>
+          <button type="button" class="botao botaoNovo" id="novoAgendamento">
+            <span aria-hidden="true">+</span> Novo agendamento
+          </button>
+        </div>
+      </div>
+
+      <section class="indicadores" aria-label="Resumo do período">
         <div class="indicador"><span class="rotuloIndicador">Atendimentos</span><strong id="indTotal">–</strong></div>
-        <div class="indicador"><span class="rotuloIndicador">A confirmar</span><strong id="indPendentes">–</strong></div>
-        <div class="indicador"><span class="rotuloIndicador">Confirmados</span><strong id="indConfirmados">–</strong></div>
-        <div class="indicador"><span class="rotuloIndicador">Previsão do dia</span><strong id="indPrevisto">–</strong></div>
+        <div class="indicador" data-status="pendente"><span class="rotuloIndicador">A confirmar</span><strong id="indPendentes">–</strong></div>
+        <div class="indicador" data-status="confirmado"><span class="rotuloIndicador">Confirmados</span><strong id="indConfirmados">–</strong></div>
+        <div class="indicador" data-status="concluido"><span class="rotuloIndicador">Concluídos</span><strong id="indConcluidos">–</strong></div>
+        <div class="indicador"><span class="rotuloIndicador">Previsão</span><strong id="indPrevisto">–</strong></div>
         <div class="indicador"><span class="rotuloIndicador">Recebido</span><strong id="indRealizado">–</strong></div>
       </section>
-
-      <div class="filtrosPainel">
-        <div class="campo" id="caixaFiltroBarbeiro">
-          <label for="filtroBarbeiro">Barbeiro</label>
-          <select id="filtroBarbeiro">
-            <option value="">Todos</option>
-          </select>
-        </div>
-        <div class="campo">
-          <label for="filtroStatus">Situação</label>
-          <select id="filtroStatus">
-            <option value="">Todas</option>
-            <option value="pendente">A confirmar</option>
-            <option value="confirmado">Confirmado</option>
-            <option value="concluido">Concluído</option>
-            <option value="faltou">Faltou</option>
-            <option value="cancelado">Cancelado</option>
-          </select>
-        </div>
-        <p class="atualizadoEm" id="atualizadoEm" aria-live="polite"></p>
-      </div>
 
       <p class="avisoSistema" id="avisoPainel" role="alert" hidden></p>
       <p class="mensagemStatus somenteLeitor" id="mensagemStatus" role="status" aria-live="polite"></p>
 
-      <section aria-labelledby="tituloLista">
-        <h2 class="somenteLeitor" id="tituloLista">Atendimentos</h2>
-        <ol class="listaAgenda" id="listaAgenda"></ol>
-        <div class="vazio" id="vazio" hidden>
-          <p>Nenhum atendimento para este dia.</p>
+      <!-- Calendário -->
+      <section class="vista" id="vistaCalendario" role="tabpanel" aria-labelledby="abaCalendario">
+        <div class="legendaCalendario" id="legenda"></div>
+        <div class="calendarioRolagem" id="calendarioRolagem">
+          <div class="calendario" id="calendario"></div>
+        </div>
+        <p class="dicaCalendario">
+          Clique num horário vazio para agendar. Arraste um atendimento para outro dia, horário ou barbeiro<span class="somenteToque">
+          (no celular, segure o atendimento antes de arrastar)</span>.
+        </p>
+      </section>
+
+      <!-- Lista em tabelas -->
+      <section class="vista" id="vistaLista" role="tabpanel" aria-labelledby="abaLista" hidden>
+        <div class="cartaoTabela">
+          <div class="cabecalhoTabela">
+            <h2 id="tituloResumo">Resumo do período</h2>
+            <p class="atualizadoEm" id="atualizadoEm" aria-live="polite"></p>
+          </div>
+          <div class="tabelaRolagem">
+            <table class="tabela tabelaResumo" aria-labelledby="tituloResumo">
+              <thead id="cabecaResumo"></thead>
+              <tbody id="corpoResumo"></tbody>
+              <tfoot id="rodapeResumo"></tfoot>
+            </table>
+          </div>
+        </div>
+
+        <div class="cartaoTabela">
+          <div class="cabecalhoTabela">
+            <h2 id="tituloLista">Atendimentos</h2>
+            <span class="contagemTabela" id="contagemLista"></span>
+          </div>
+          <table class="tabela tabelaAtendimentos" aria-labelledby="tituloLista">
+            <thead>
+              <tr>
+                <th scope="col">Data</th>
+                <th scope="col">Horário</th>
+                <th scope="col">Cliente</th>
+                <th scope="col">Serviço</th>
+                <th scope="col">Barbeiro</th>
+                <th scope="col" class="numero">Valor</th>
+                <th scope="col">Situação</th>
+                <th scope="col"><span class="somenteLeitor">Ações</span></th>
+              </tr>
+            </thead>
+            <tbody id="listaAgenda"></tbody>
+          </table>
+          <div class="vazio" id="vazio" hidden>
+            <p>Nenhum atendimento neste período.</p>
+          </div>
         </div>
       </section>
     </main>
 
-    <template id="modeloAtendimento">
-      <li class="atendimento">
-        <div class="horaAtendimento">
-          <strong class="inicio"></strong>
-          <span class="fim"></span>
-        </div>
-        <div class="dadosAtendimento">
-          <div class="linhaTitulo">
-            <h3 class="cliente"></h3>
-            <span class="etiquetaStatus"></span>
+    <!-- Novo agendamento (manual) -->
+    <dialog class="dialogo" id="dialogoNovo" aria-labelledby="tituloNovo">
+      <form method="dialog" class="conteudoDialogo" id="formNovo" novalidate>
+        <div class="topoDialogo">
+          <div>
+            <p class="minititulo">Agendamento manual</p>
+            <h2 class="tituloDialogo" id="tituloNovo">Novo agendamento</h2>
           </div>
-          <p class="detalhes"></p>
-          <p class="contato">
-            <a class="telefone" target="_blank" rel="noopener noreferrer"></a>
-            <span class="codigo"></span>
-          </p>
+          <button type="button" class="fecharDialogo" data-fechar aria-label="Fechar">×</button>
         </div>
-        <div class="acoesAtendimento"></div>
-      </li>
-    </template>
+
+        <p class="avisoSistema" id="erroNovo" role="alert" hidden></p>
+
+        <div class="gradeCampos">
+          <div class="campo campoLargo">
+            <label for="novoNome">Nome do cliente</label>
+            <input id="novoNome" name="nome" autocomplete="off" maxlength="80" required />
+          </div>
+          <div class="campo campoLargo">
+            <label for="novoTelefone">WhatsApp <span class="opcional">(opcional)</span></label>
+            <input id="novoTelefone" name="telefone" type="tel" inputmode="tel" autocomplete="off" placeholder="(62) 99999-9999" />
+          </div>
+          <div class="campo campoLargo">
+            <label for="novoServico">Serviço</label>
+            <select id="novoServico" name="servicoId" required></select>
+          </div>
+          <div class="campo campoLargo" id="caixaNovoBarbeiro">
+            <label for="novoBarbeiro">Barbeiro</label>
+            <select id="novoBarbeiro" name="barbeiroId"></select>
+          </div>
+          <div class="campo">
+            <label for="novoData">Data</label>
+            <input id="novoData" name="data" type="date" required />
+          </div>
+          <div class="campo">
+            <label for="novoHora">Horário</label>
+            <select id="novoHora" name="hora" required></select>
+          </div>
+        </div>
+        <p class="dicaCampo" id="dicaNovo"></p>
+
+        <label class="marcador">
+          <input type="checkbox" id="novoConcluido" />
+          <span>Cliente já foi atendido (registrar como concluído)</span>
+        </label>
+
+        <div class="rodapeDialogo">
+          <button type="button" class="botao botaoContorno" data-fechar>Cancelar</button>
+          <button type="submit" class="botao" id="salvarNovo">Agendar</button>
+        </div>
+      </form>
+    </dialog>
+
+    <!-- Detalhes de um atendimento -->
+    <dialog class="dialogo" id="dialogoDetalhe" aria-labelledby="tituloDetalhe">
+      <div class="conteudoDialogo">
+        <div class="topoDialogo">
+          <div>
+            <p class="minititulo" id="detalheCodigo"></p>
+            <h2 class="tituloDialogo" id="tituloDetalhe"></h2>
+          </div>
+          <button type="button" class="fecharDialogo" data-fechar aria-label="Fechar">×</button>
+        </div>
+        <p class="avisoSistema" id="erroDetalhe" role="alert" hidden></p>
+        <dl class="fichaDetalhe" id="fichaDetalhe"></dl>
+        <div class="acoesDetalhe" id="acoesDetalhe"></div>
+
+        <form class="remarcar" id="formRemarcar" novalidate>
+          <h3>Remarcar</h3>
+          <div class="gradeCampos">
+            <div class="campo">
+              <label for="remarcarData">Data</label>
+              <input type="date" id="remarcarData" required />
+            </div>
+            <div class="campo">
+              <label for="remarcarHora">Horário</label>
+              <select id="remarcarHora" required></select>
+            </div>
+            <div class="campo campoLargo" id="caixaRemarcarBarbeiro">
+              <label for="remarcarBarbeiro">Barbeiro</label>
+              <select id="remarcarBarbeiro"></select>
+            </div>
+          </div>
+          <button type="submit" class="botao botaoContorno">Salvar novo horário</button>
+        </form>
+      </div>
+    </dialog>
+
+    <!-- Relatório por barbeiro -->
+    <dialog class="dialogo dialogoLargo" id="dialogoRelatorio" aria-labelledby="tituloRelatorio">
+      <div class="conteudoDialogo">
+        <div class="topoDialogo">
+          <div>
+            <p class="minititulo">Nova Era Barbearia</p>
+            <h2 class="tituloDialogo" id="tituloRelatorio">Relatório de atendimentos</h2>
+            <p class="subtituloRelatorio" id="periodoRelatorio"></p>
+          </div>
+          <button type="button" class="fecharDialogo" data-fechar aria-label="Fechar">×</button>
+        </div>
+
+        <form class="filtroRelatorio" id="formRelatorio" novalidate>
+          <div class="segmentado" role="group" aria-label="Atalhos de período">
+            <button type="button" class="opcaoSegmento" data-atalho="dia">Hoje</button>
+            <button type="button" class="opcaoSegmento" data-atalho="semana">Esta semana</button>
+            <button type="button" class="opcaoSegmento" data-atalho="mes">Este mês</button>
+          </div>
+          <div class="campo">
+            <label for="relInicio">De</label>
+            <input type="date" id="relInicio" required />
+          </div>
+          <div class="campo">
+            <label for="relFim">Até</label>
+            <input type="date" id="relFim" required />
+          </div>
+          <button type="submit" class="botao" id="gerarRelatorio">Gerar relatório</button>
+        </form>
+
+        <p class="avisoSistema" id="erroRelatorio" role="alert" hidden></p>
+
+        <div id="resultadoRelatorio" hidden>
+          <div class="destaquesRelatorio" id="destaquesRelatorio"></div>
+          <div class="barrasRelatorio" id="barrasRelatorio" aria-hidden="true"></div>
+          <div class="tabelaRolagem">
+            <table class="tabela tabelaRelatorio" id="tabelaRelatorio">
+              <caption class="somenteLeitor">Atendimentos por barbeiro</caption>
+              <thead>
+                <tr>
+                  <th scope="col">Barbeiro</th>
+                  <th scope="col" class="numero">Pessoas atendidas</th>
+                  <th scope="col" class="numero">Clientes diferentes</th>
+                  <th scope="col" class="numero">Aguardando</th>
+                  <th scope="col" class="numero">Faltas</th>
+                  <th scope="col" class="numero">Cancelados</th>
+                  <th scope="col" class="numero">Comparecimento</th>
+                  <th scope="col" class="numero">Horas</th>
+                  <th scope="col" class="numero">Faturado</th>
+                  <th scope="col" class="numero">Ticket médio</th>
+                </tr>
+              </thead>
+              <tbody id="corpoRelatorio"></tbody>
+              <tfoot id="rodapeRelatorio"></tfoot>
+            </table>
+          </div>
+          <p class="notaRelatorio">
+            "Pessoas atendidas" conta os atendimentos concluídos. Comparecimento = concluídos ÷ (concluídos + faltas).
+          </p>
+          <div class="rodapeDialogo">
+            <button type="button" class="botao botaoContorno" id="baixarCsv">Baixar planilha (CSV)</button>
+            <button type="button" class="botao" id="imprimirRelatorio">Imprimir / salvar PDF</button>
+          </div>
+        </div>
+      </div>
+    </dialog>
   </body>
 </html>

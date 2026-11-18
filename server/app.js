@@ -152,16 +152,48 @@ function criarApp({ db, producao = false, agora = () => new Date(), log = consol
 
   api.get("/admin/me", (req, res) => res.json(req.usuario));
 
+  // Lista de um dia (?data=) ou de um período (?inicio=&fim=), com o resumo do mesmo recorte.
   api.get("/admin/agendamentos", (req, res) => {
-    const filtro = { data: req.query.data, barbeiroId: barbeiroDoFiltro(req) };
+    const { data, inicio, fim } = req.query;
+    const filtro = { data, inicio, fim, barbeiroId: barbeiroDoFiltro(req) };
     res.json({
       agendamentos: agenda.listar({ ...filtro, status: req.query.status || null }),
       resumo: agenda.resumo(filtro),
     });
   });
 
+  // Agendamento manual feito pela equipe.
+  api.post("/admin/agendamentos", (req, res) => {
+    const b = req.body || {};
+    const criado = agenda.criarManual(
+      {
+        nome: b.nome,
+        telefone: b.telefone,
+        servicoId: b.servicoId,
+        barbeiroId: b.barbeiroId || null,
+        data: b.data,
+        hora: b.hora,
+        status: b.status,
+      },
+      req.usuario
+    );
+    log.info?.(`Agendamento manual ${criado.codigo} para ${criado.data} ${criado.hora} (usuário ${req.usuario.id}).`);
+    res.status(201).json(criado);
+  });
+
   api.patch("/admin/agendamentos/:id", (req, res) => {
     res.json(agenda.mudarStatus(req.params.id, req.body?.status, req.usuario));
+  });
+
+  // Remarcação: arrastar o atendimento para outra data, horário ou barbeiro.
+  api.patch("/admin/agendamentos/:id/horario", (req, res) => {
+    const b = req.body || {};
+    res.json(agenda.remarcar(req.params.id, { data: b.data, hora: b.hora, barbeiroId: b.barbeiroId }, req.usuario));
+  });
+
+  // Quantas pessoas cada barbeiro atendeu no período.
+  api.get("/admin/relatorio", (req, res) => {
+    res.json(agenda.relatorio({ inicio: req.query.inicio, fim: req.query.fim, barbeiroId: barbeiroDoFiltro(req) }));
   });
 
   api.use((req, res) => res.status(404).json({ erro: "Rota não encontrada." }));

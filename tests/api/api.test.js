@@ -149,3 +149,92 @@ describe("API do painel", () => {
     assert.ok(Number(bloqueado.headers.get("retry-after")) > 0);
   });
 });
+
+describe("API do painel: calendário, agendamento manual e relatório", () => {
+  let s, admin, rafael;
+  before(async () => {
+    s = await subirServidor();
+    admin = await s.login();
+    rafael = await s.login("rafael@teste.com");
+  });
+  after(() => s.fechar());
+
+  const manual = (extra = {}) => ({ nome: "João Balcão", servicoId: 1, barbeiroId: 2, data: "2026-11-19", hora: "10:00", ...extra });
+
+  test("equipe agenda manualmente, sem telefone, e já nasce confirmado", async () => {
+    const r = await s.req("POST", "/api/admin/agendamentos", { cookie: admin, corpo: manual() });
+    assert.equal(r.status, 201);
+    assert.equal(r.json.status, "confirmado");
+    assert.equal(r.json.barbeiro.nome, "Thiago Brandão");
+    assert.equal(r.json.termino, "11:00");
+    assert.equal(r.json.cliente.telefone, "");
+  });
+
+  test("agendamento manual recusa conflito, domingo e dia passado", async () => {
+    assert.equal((await s.req("POST", "/api/admin/agendamentos", { cookie: admin, corpo: manual({ hora: "10:30" }) })).status, 409);
+    assert.equal((await s.req("POST", "/api/admin/agendamentos", { cookie: admin, corpo: manual({ data: "2026-11-22" }) })).status, 422);
+    assert.equal((await s.req("POST", "/api/admin/agendamentos", { cookie: admin, corpo: manual({ data: "2026-11-17" }) })).status, 422);
+  });
+
+  test("barbeiro só agenda para si mesmo", async () => {
+    const r = await s.req("POST", "/api/admin/agendamentos", { cookie: rafael, corpo: manual({ barbeiroId: 2, nome: "Ana Lima" }) });
+    assert.equal(r.status, 201);
+    assert.equal(r.json.barbeiro.nome, "Rafael Moura");
+  });
+
+  test("lista por período devolve vários dias", async () => {
+    await s.req("POST", "/api/admin/agendamentos", { cookie: admin, corpo: manual({ data: "2026-11-24", nome: "Bruno Dias" }) });
+    const r = await s.req("GET", "/api/admin/agendamentos?inicio=2026-11-18&fim=2026-11-30", { cookie: admin });
+    assert.equal(r.status, 200);
+    assert.deepEqual([...new Set(r.json.agendamentos.map((a) => a.data))], ["2026-11-19", "2026-11-24"]);
+    assert.equal(r.json.resumo.total, 3);
+    const longo = await s.req("GET", "/api/admin/agendamentos?inicio=2026-01-01&fim=2026-12-31", { cookie: admin });
+    assert.equal(longo.status, 422);
+  });
+
+  test("remarcar (arrastar) muda data, horário e barbeiro, sem conflito", async () => {
+    const { json } = await s.req("GET", "/api/admin/agendamentos?data=2026-11-24", { cookie: admin });
+    const id = json.agendamentos[0].id;
+    const ok = await s.req("PATCH", `/api/admin/agendamentos/${id}/horario`, {
+      cookie: admin,
+      corpo: { data: "2026-11-25", hora: "15:30", barbeiroId: 3 },
+    });
+    assert.equal(ok.status, 200);
+    assert.equal(ok.json.data, "2026-11-25");
+    assert.equal(ok.json.hora, "15:30");
+    assert.equal(ok.json.barbeiro.nome, "Caio Henrique");
+
+    const ocupado = await s.req("GET", "/api/admin/agendamentos?data=2026-11-19", { cookie: admin });
+    const outro = ocupado.json.agendamentos.find((a) => a.barbeiro.id === 2).id;
+    const choque = await s.req("PATCH", `/api/admin/agendamentos/${id}/horario`, {
+      cookie: admin,
+      corpo: { data: "2026-11-19", hora: "10:00", barbeiroId: 2 },
+    });
+    assert.equal(choque.status, 409);
+    const proibido = await s.req("PATCH", `/api/admin/agendamentos/${outro}/horario`, {
+      cookie: rafael,
+      corpo: { data: "2026-11-21", hora: "10:00" },
+    });
+    assert.equal(proibido.status, 403);
+  });
+
+  test("relatório conta quantas pessoas cada barbeiro atendeu", async () => {
+    const { json } = await s.req("GET", "/api/admin/agendamentos?data=2026-11-19", { cookie: admin });
+    for (const a of json.agendamentos) {
+      await s.req("PATCH", `/api/admin/agendamentos/${a.id}`, { cookie: admin, corpo: { status: "concluido" } });
+    }
+    const r = await s.req("GET", "/api/admin/relatorio?inicio=2026-11-01&fim=2026-11-30", { cookie: admin });
+    assert.equal(r.status, 200);
+    assert.equal(r.json.barbeiros.length, 3);
+    const porNome = Object.fromEntries(r.json.barbeiros.map((b) => [b.nome, b]));
+    assert.equal(porNome["Thiago Brandão"].atendidos, 1);
+    assert.equal(porNome["Rafael Moura"].atendidos, 1);
+    assert.equal(porNome["Caio Henrique"].atendidos, 0);
+    assert.equal(porNome["Caio Henrique"].aguardando, 1);
+    assert.equal(r.json.totais.atendidos, 2);
+    assert.equal(r.json.totais.faturado, 80);
+
+    const proprio = await s.req("GET", "/api/admin/relatorio?inicio=2026-11-01&fim=2026-11-30", { cookie: rafael });
+    assert.deepEqual(proprio.json.barbeiros.map((b) => b.nome), ["Rafael Moura"]);
+  });
+});

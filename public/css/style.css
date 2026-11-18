@@ -16,8 +16,8 @@
   --verde: #22c55e;
   --vermelho: #ef4444;
 
-  --fonte-titulo: "Oswald", "Arial Narrow", Arial, sans-serif;
-  --fonte-texto: "Manrope", "Segoe UI", Arial, sans-serif;
+  --fonte-titulo: "Oswald", "Arial Narrow", "Liberation Sans Narrow", "Roboto Condensed", Arial, sans-serif;
+  --fonte-texto: "Manrope", system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans", "Liberation Sans", Arial, sans-serif;
 
   --ease-saida: cubic-bezier(0.2, 0.8, 0.2, 1);
   --altura-header: 70px;
@@ -25,6 +25,16 @@
   /* Cantos arredondados */
   --raio-pequeno: 8px; /* botões, campos, etiquetas */
   --raio-medio: 14px; /* cartões e painéis */
+
+  /* Margens seguras do iPhone/Android com recorte de tela (0 nos demais aparelhos) */
+  --seguro-topo: env(safe-area-inset-top, 0px);
+  --seguro-esq: env(safe-area-inset-left, 0px);
+  --seguro-dir: env(safe-area-inset-right, 0px);
+  --seguro-base: env(safe-area-inset-bottom, 0px);
+
+  /* Site sempre escuro: controles nativos (campos, data, rolagem) em tema escuro
+     no Windows, macOS, Linux, Android e iOS. */
+  color-scheme: dark;
 }
 
 * {
@@ -37,6 +47,7 @@ html { /* Esse e um comando em testes para suavizar a troca de seções ao clica
   scroll-behavior: smooth;
   scroll-padding-top: var(--altura-header);
   -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
 }
 
 body {
@@ -48,6 +59,8 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
+  -webkit-tap-highlight-color: transparent; /* sem o retângulo azul/cinza ao tocar no celular */
+  overflow-wrap: break-word;
 }
 
 body::after {
@@ -117,6 +130,9 @@ header {
   align-items: center;
   column-gap: 24px;
   padding: 18px 6%;
+  padding-top: calc(18px + var(--seguro-topo));
+  padding-left: max(6%, var(--seguro-esq));
+  padding-right: max(6%, var(--seguro-dir));
   color: var(--branco);
   background-color: transparent;
   border-bottom: 1px solid transparent;
@@ -155,8 +171,10 @@ header .logoHeader {
     transform 0.4s var(--ease-saida);
 }
 
-header .logoLink:hover .logoHeader {
-  transform: scale(1.06);
+@media (hover: hover) {
+  header .logoLink:hover .logoHeader {
+    transform: scale(1.06);
+  }
 }
 
 header .menu ul {
@@ -192,19 +210,29 @@ header .menu li a::after {
   transition: transform 0.35s var(--ease-saida);
 }
 
-header .menu li a:hover,
 header .menu li a.atual {
   color: var(--branco);
 }
 
-header .menu li a:hover::after,
 header .menu li a.atual::after {
   transform: scaleX(1);
   transform-origin: bottom left;
 }
 
+@media (hover: hover) {
+  header .menu li a:hover {
+    color: var(--branco);
+  }
+
+  header .menu li a:hover::after {
+    transform: scaleX(1);
+    transform-origin: bottom left;
+  }
+}
+
 header.scrolled {
-  padding: 10px 6%;
+  padding-top: calc(10px + var(--seguro-topo));
+  padding-bottom: 10px;
   background-color: rgba(10, 10, 10, 0.72);
   backdrop-filter: blur(14px) saturate(140%);
   -webkit-backdrop-filter: blur(14px) saturate(140%);
@@ -242,9 +270,15 @@ header.scrolled .logoHeader {
     border-color 0.2s ease;
 }
 
-.botao:hover {
-  background-color: transparent;
-  color: var(--branco);
+@media (hover: hover) {
+  .botao:hover {
+    background-color: transparent;
+    color: var(--branco);
+  }
+}
+
+.botao:active {
+  opacity: 0.82;
 }
 
 .botaoContorno {
@@ -253,10 +287,12 @@ header.scrolled .logoHeader {
   border-color: var(--linha-forte);
 }
 
-.botaoContorno:hover {
-  color: var(--preto-0);
-  background-color: var(--branco);
-  border-color: var(--branco);
+@media (hover: hover) {
+  .botaoContorno:hover {
+    color: var(--preto-0);
+    background-color: var(--branco);
+    border-color: var(--branco);
+  }
 }
 
 @media (max-width: 760px) {
@@ -281,10 +317,11 @@ header.scrolled .logoHeader {
 
 @media (max-width: 560px) {
   header {
-    padding: 14px 5%;
+    padding: calc(14px + var(--seguro-topo)) max(5%, var(--seguro-dir)) 14px max(5%, var(--seguro-esq));
   }
   header.scrolled {
-    padding: 6px 5%;
+    padding-top: calc(6px + var(--seguro-topo));
+    padding-bottom: 6px;
   }
   header .logoHeader {
     width: 46px;
@@ -457,6 +494,20 @@ header.scrolled .logoHeader {
   }
 }
 
+@media (max-width: 374px) {
+  .minititulo {
+    gap: 10px;
+    letter-spacing: 0.2em;
+  }
+  .minititulo::before,
+  .cabecalhoServicos .minititulo::after {
+    width: 22px;
+  }
+  .tituloHero {
+    font-size: 2.6rem;
+  }
+}
+
 @media (max-width: 560px) {
   .hero {
     padding: 150px 6% 90px;
@@ -626,8 +677,10 @@ header.scrolled .logoHeader {
     background 0.3s ease;
 }
 
-.ponto:hover {
-  --trilho: rgba(255, 255, 255, 0.55);
+@media (hover: hover) {
+  .ponto:hover {
+    --trilho: rgba(255, 255, 255, 0.55);
+  }
 }
 
 .ponto.ativo {
@@ -748,12 +801,14 @@ header.scrolled .logoHeader {
     box-shadow 0.5s ease;
 }
 
-.cartaoVidro:hover {
-  transform: translateY(-6px);
-  border-color: var(--linha-forte);
-  box-shadow:
-    0 40px 80px rgba(0, 0, 0, 0.55),
-    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+@media (hover: hover) {
+  .cartaoVidro:hover {
+    transform: translateY(-6px);
+    border-color: var(--linha-forte);
+    box-shadow:
+      0 40px 80px rgba(0, 0, 0, 0.55),
+      inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  }
 }
 
 .cartaoTopo {
@@ -813,9 +868,11 @@ header.scrolled .logoHeader {
   border-top: 1px solid rgba(255, 255, 255, 0.04);
 }
 
-.listaServicos li:hover {
-  background-color: rgba(255, 255, 255, 0.04);
-  transform: translateX(4px);
+@media (hover: hover) {
+  .listaServicos li:hover {
+    background-color: rgba(255, 255, 255, 0.04);
+    transform: translateX(4px);
+  }
 }
 
 .infoServico {
@@ -891,9 +948,11 @@ header.scrolled .logoHeader {
   transition-delay: 0.15s;
 }
 
-.js .cartaoVidro.visivel:hover {
-  transform: translateY(-6px);
-  transition-delay: 0s;
+@media (hover: hover) {
+  .js .cartaoVidro.visivel:hover {
+    transform: translateY(-6px);
+    transition-delay: 0s;
+  }
 }
 
 #local.local {
@@ -929,6 +988,7 @@ header.scrolled .logoHeader {
   align-items: center;
   padding: calc(var(--altura-header) + 8px) 6% clamp(16px, 3vw, 32px);
   isolation: isolate;
+  overflow: hidden; /* recorta o brilho (::before), que é mais largo que a tela */
   background:
     linear-gradient(180deg, var(--preto-0) 0%, rgba(10, 10, 10, 0.84) 18%, rgba(10, 10, 10, 0.84) 82%, var(--preto-0) 100%),
     url("../image/endereco-nova-era.webp") center / cover no-repeat;
@@ -950,7 +1010,12 @@ header.scrolled .logoHeader {
 
 #local.is-scrubbing {
   min-height: 260vh;
-  min-height: var(--local-percurso);
+}
+
+@supports (height: 100svh) {
+  #local.is-scrubbing {
+    min-height: var(--local-percurso);
+  }
 }
 
 #local.is-scrubbing .localSticky {
@@ -1047,8 +1112,8 @@ header.scrolled .logoHeader {
 #local .localVisual {
   min-width: 0;
   margin: 0;
-  width: min(100%, calc((100vh - 260px) * 1.751));
-  width: min(100%, calc((100svh - 260px) * 1.751));
+  width: min(100%, max(360px, calc((100vh - 260px) * 1.751)));
+  width: min(100%, max(360px, calc((100svh - 260px) * 1.751)));
   justify-self: center;
 }
 
@@ -1163,6 +1228,7 @@ footer {
   align-items: center;
   gap: 18px;
   padding: 56px 6% 44px;
+  padding-bottom: calc(44px + var(--seguro-base));
   text-align: center;
   background: var(--preto-0);
   border-top: 1px solid var(--linha);
@@ -1200,8 +1266,10 @@ footer p {
   transition: color 0.2s ease;
 }
 
-.rodapeLinks a:hover {
-  color: var(--branco);
+@media (hover: hover) {
+  .rodapeLinks a:hover {
+    color: var(--branco);
+  }
 }
 
 /* Telas de toque (celulares e tablets): área mínima de 44px em tudo que se toca
@@ -1245,5 +1313,28 @@ footer p {
   }
   #local .localVideo {
     display: none;
+  }
+}
+
+/* Windows com alto contraste (cores forçadas): mantém textos e indicadores visíveis. */
+@media (forced-colors: active) {
+  .conteudoCartao h3 {
+    background: none;
+    -webkit-text-fill-color: CanvasText;
+    color: CanvasText;
+  }
+  .etiquetaHero::before {
+    forced-color-adjust: none;
+  }
+  .ponto::before {
+    background: GrayText;
+  }
+  .ponto::after {
+    background: Highlight;
+  }
+  .botao,
+  .cartaoVidro,
+  #local .fundoVidro {
+    border: 1px solid ButtonText;
   }
 }

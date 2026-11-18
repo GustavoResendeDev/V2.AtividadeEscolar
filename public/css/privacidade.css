@@ -70,8 +70,10 @@
   text-underline-offset: 4px;
 }
 
-.documento a:hover {
-  text-decoration-color: var(--branco);
+@media (hover: hover) {
+  .documento a:hover {
+    text-decoration-color: var(--branco);
+  }
 }
 
 .sumario {
@@ -100,9 +102,11 @@
   color: var(--texto);
 }
 
-.sumario a:hover {
-  color: var(--branco);
-  text-decoration: underline;
+@media (hover: hover) {
+  .sumario a:hover {
+    color: var(--branco);
+    text-decoration: underline;
+  }
 }
 
 .destaque {

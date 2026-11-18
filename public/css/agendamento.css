@@ -148,9 +148,11 @@
   color: var(--texto-apagado);
 }
 
-.campo input:hover,
-.campo select:hover {
-  border-color: var(--preto-6);
+@media (hover: hover) {
+  .campo input:hover,
+  .campo select:hover {
+    border-color: var(--preto-6);
+  }
 }
 
 .campo input:focus,
@@ -202,10 +204,13 @@
   pointer-events: none;
 }
 
-.opcaoBarbeiro:hover {
-  border-color: var(--preto-6);
+@media (hover: hover) {
+  .opcaoBarbeiro:hover {
+    border-color: var(--preto-6);
+  }
 }
 
+.opcaoBarbeiro.selecionado,
 .opcaoBarbeiro:has(input:checked) {
   border-color: var(--branco);
   background: var(--preto-3);
@@ -214,6 +219,13 @@
 .opcaoBarbeiro:has(input:focus-visible) {
   outline: 2px solid var(--branco);
   outline-offset: 3px;
+}
+
+@supports not selector(:has(*)) {
+  .opcaoBarbeiro:focus-within {
+    outline: 2px solid var(--branco);
+    outline-offset: 3px;
+  }
 }
 
 .nomeBarbeiro {

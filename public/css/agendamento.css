@@ -228,6 +228,24 @@
   display: none;
 }
 
+/* Campo de data: no iOS/Safari (e em alguns Android) o seletor nativo tem largura
+   mínima própria e ignora width: 100%, saindo do painel em telas estreitas. */
+.campo input[type="date"] {
+  display: block;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+  -webkit-appearance: none;
+  appearance: none;
+  line-height: 48px;
+}
+
+.campo input[type="date"]::-webkit-date-and-time-value {
+  min-width: 0;
+  margin: 0;
+  text-align: left;
+}
+
 /* ---------- Data: atalhos dos próximos dias ---------- */
 .atalhosData {
   display: grid;

@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="pt-br">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#0a0a0a" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>Agenda | Painel Nova Era</title>
+    <link rel="icon" type="image/png" sizes="64x64" href="../image/favicon-64.png" />
+    <link rel="preload" href="../fonts/oswald-latin.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="../fonts/manrope-latin.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="stylesheet" href="../css/fontes.css" />
+    <link rel="stylesheet" href="../css/style.css" />
+    <link rel="stylesheet" href="../css/agendamento.css" />
+    <link rel="stylesheet" href="../css/painel.css" />
+    <script src="../js/regras.js" defer></script>
+    <script src="../js/painel.js" defer></script>
+  </head>
+  <body class="paginaPainel">
+    <header class="cabecalhoPainel">
+      <a href="painel.html" class="marcaPainel">
+        <img src="../image/logo.webp" alt="" width="256" height="256" />
+        <span>Painel <strong>Nova Era</strong></span>
+      </a>
+      <div class="usuarioPainel">
+        <span class="nomeUsuario" id="nomeUsuario"></span>
+        <button type="button" class="botao botaoContorno botaoPequeno" id="sair">Sair</button>
+      </div>
+    </header>
+
+    <main class="painel" id="painel" aria-busy="true">
+      <div class="topoPainel">
+        <div>
+          <p class="minititulo">Agenda do dia</p>
+          <h1 class="tituloPainel" id="tituloData">Agenda</h1>
+        </div>
+        <div class="navegacaoData" role="group" aria-label="Escolher o dia">
+          <button type="button" class="botao botaoContorno botaoPequeno" id="diaAnterior" aria-label="Dia anterior">←</button>
+          <button type="button" class="botao botaoContorno botaoPequeno" id="hoje">Hoje</button>
+          <button type="button" class="botao botaoContorno botaoPequeno" id="proximoDia" aria-label="Próximo dia">→</button>
+          <label class="somenteLeitor" for="dataPainel">Data</label>
+          <input type="date" id="dataPainel" class="entradaPainel" />
+        </div>
+      </div>
+
+      <section class="indicadores" aria-label="Resumo do dia">
+        <div class="indicador"><span class="rotuloIndicador">Atendimentos</span><strong id="indTotal">–</strong></div>
+        <div class="indicador"><span class="rotuloIndicador">A confirmar</span><strong id="indPendentes">–</strong></div>
+        <div class="indicador"><span class="rotuloIndicador">Confirmados</span><strong id="indConfirmados">–</strong></div>
+        <div class="indicador"><span class="rotuloIndicador">Previsão do dia</span><strong id="indPrevisto">–</strong></div>
+        <div class="indicador"><span class="rotuloIndicador">Recebido</span><strong id="indRealizado">–</strong></div>
+      </section>
+
+      <div class="filtrosPainel">
+        <div class="campo" id="caixaFiltroBarbeiro">
+          <label for="filtroBarbeiro">Barbeiro</label>
+          <select id="filtroBarbeiro">
+            <option value="">Todos</option>
+          </select>
+        </div>
+        <div class="campo">
+          <label for="filtroStatus">Situação</label>
+          <select id="filtroStatus">
+            <option value="">Todas</option>
+            <option value="pendente">A confirmar</option>
+            <option value="confirmado">Confirmado</option>
+            <option value="concluido">Concluído</option>
+            <option value="faltou">Faltou</option>
+            <option value="cancelado">Cancelado</option>
+          </select>
+        </div>
+        <p class="atualizadoEm" id="atualizadoEm" aria-live="polite"></p>
+      </div>
+
+      <p class="avisoSistema" id="avisoPainel" role="alert" hidden></p>
+      <p class="mensagemStatus somenteLeitor" id="mensagemStatus" role="status" aria-live="polite"></p>
+
+      <section aria-labelledby="tituloLista">
+        <h2 class="somenteLeitor" id="tituloLista">Atendimentos</h2>
+        <ol class="listaAgenda" id="listaAgenda"></ol>
+        <div class="vazio" id="vazio" hidden>
+          <p>Nenhum atendimento para este dia.</p>
+        </div>
+      </section>
+    </main>
+
+    <template id="modeloAtendimento">
+      <li class="atendimento">
+        <div class="horaAtendimento">
+          <strong class="inicio"></strong>
+          <span class="fim"></span>
+        </div>
+        <div class="dadosAtendimento">
+          <div class="linhaTitulo">
+            <h3 class="cliente"></h3>
+            <span class="etiquetaStatus"></span>
+          </div>
+          <p class="detalhes"></p>
+          <p class="contato">
+            <a class="telefone" target="_blank" rel="noopener noreferrer"></a>
+            <span class="codigo"></span>
+          </p>
+        </div>
+        <div class="acoesAtendimento"></div>
+      </li>
+    </template>
+  </body>
+</html>

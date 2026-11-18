@@ -1,0 +1,26 @@
+# Implantação no Render (https://render.com): Blueprint com disco persistente para o SQLite.
+services:
+  - type: web
+    name: nova-era-barbearia
+    runtime: node
+    plan: starter
+    buildCommand: npm ci --omit=dev
+    startCommand: npm start
+    healthCheckPath: /api/saude
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NODE_VERSION
+        value: "22"
+      - key: DB_PATH
+        value: /var/data/novaera.db
+      - key: BACKUP_DIR
+        value: /var/data/backups
+      - key: ADMIN_EMAIL
+        sync: false
+      - key: ADMIN_SENHA
+        sync: false
+    disk:
+      name: dados
+      mountPath: /var/data
+      sizeGB: 1

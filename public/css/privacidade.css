@@ -94,6 +94,8 @@
 }
 
 .sumario a {
+  display: inline-block;
+  padding: 6px 0; /* área de toque confortável no celular */
   text-decoration: none;
   color: var(--texto);
 }

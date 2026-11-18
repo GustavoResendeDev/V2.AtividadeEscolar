@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="pt-br">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#0a0a0a" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>Entrar | Painel Nova Era</title>
+    <link rel="icon" type="image/png" sizes="64x64" href="../image/favicon-64.png" />
+    <link rel="preload" href="../fonts/oswald-latin.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="../fonts/manrope-latin.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="stylesheet" href="../css/fontes.css" />
+    <link rel="stylesheet" href="../css/style.css" />
+    <link rel="stylesheet" href="../css/agendamento.css" />
+    <link rel="stylesheet" href="../css/painel.css" />
+    <script src="../js/login.js" defer></script>
+  </head>
+  <body class="paginaLogin">
+    <main class="login">
+      <div class="cartaoLogin">
+        <a href="../index.html" class="logoLogin" aria-label="Voltar ao site da Nova Era Barbearia">
+          <img src="../image/logo.webp" alt="Logo da Nova Era Barbearia" width="256" height="256" />
+        </a>
+        <p class="minititulo">Área da equipe</p>
+        <h1 class="tituloLogin">Painel do barbeiro</h1>
+        <p class="textoLogin">Entre com o seu e-mail e senha para ver e organizar a agenda.</p>
+
+        <p class="avisoSistema" id="erroLogin" role="alert" hidden></p>
+
+        <form id="formLogin" class="formLogin" novalidate>
+          <div class="campo">
+            <label for="email">E-mail</label>
+            <input type="email" id="email" name="email" autocomplete="username" required />
+          </div>
+          <div class="campo">
+            <label for="senha">Senha</label>
+            <div class="campoSenha">
+              <input type="password" id="senha" name="senha" autocomplete="current-password" required />
+              <button type="button" class="mostrarSenha" id="mostrarSenha" aria-pressed="false">Mostrar</button>
+            </div>
+          </div>
+          <button type="submit" class="botao botaoEnviar">Entrar</button>
+        </form>
+
+        <a class="voltarSite" href="../index.html"><span aria-hidden="true">←</span> Voltar ao site</a>
+      </div>
+    </main>
+  </body>
+</html>

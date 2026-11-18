@@ -17,9 +17,8 @@
     <link rel="stylesheet" href="./css/fontes.css" />
     <link rel="stylesheet" href="./css/style.css" />
     <link rel="stylesheet" href="./css/privacidade.css" />
-    <script>
-      document.documentElement.classList.add("js");
-    </script>
+    <script src="./js/inicio.js"></script>
+    <script src="./js/regras.js" defer></script>
     <script src="./js/script.js" defer></script>
   </head>
   <body class="paginaTexto">
@@ -60,7 +59,7 @@
         <ol>
           <li><a href="#controlador">Quem é responsável pelos seus dados</a></li>
           <li><a href="#dados">Quais dados tratamos</a></li>
-          <li><a href="#site">O que o site não faz</a></li>
+          <li><a href="#site">Como o site trata os dados</a></li>
           <li><a href="#finalidade">Para que usamos e com qual base legal</a></li>
           <li><a href="#compartilhamento">Com quem os dados são compartilhados</a></li>
           <li><a href="#retencao">Por quanto tempo guardamos</a></li>
@@ -86,13 +85,15 @@
         <p>Pelo formulário de agendamento, você informa apenas:</p>
         <ul>
           <li>nome;</li>
+          <li>número de WhatsApp, para confirmarmos ou remarcarmos o horário;</li>
           <li>serviço desejado;</li>
           <li>data e horário;</li>
           <li>barbeiro de preferência.</li>
         </ul>
         <p>
-          Ao enviar a mensagem, o WhatsApp também nos mostra o seu número de telefone
-          e o nome do seu perfil, que usamos para confirmar o horário.
+          O sistema registra ainda a data e a hora em que você concordou com esta
+          política e o histórico da situação do agendamento (a confirmar, confirmado,
+          concluído, cancelado ou falta).
         </p>
         <p>
           Seguimos o princípio da necessidade (BRASIL, 2018, art. 6º, III): não pedimos
@@ -102,18 +103,30 @@
       </section>
 
       <section id="site">
-        <h2>3 O que o site não faz</h2>
+        <h2>3 Como o site trata os dados</h2>
         <ul>
-          <li>não envia o formulário para nenhum servidor nem guarda os dados preenchidos;</li>
-          <li>não usa cookies, ferramentas de análise de audiência nem anúncios;</li>
+          <li>
+            ao confirmar o agendamento, os dados são gravados no banco de dados da
+            barbearia, para reservar o horário e evitar que duas pessoas marquem o
+            mesmo barbeiro ao mesmo tempo;
+          </li>
+          <li>
+            somente a equipe, com login e senha individuais, acessa a agenda; cada
+            barbeiro vê apenas os próprios atendimentos;
+          </li>
+          <li>
+            o site não usa cookies de visitantes, ferramentas de análise de audiência
+            nem anúncios. O único cookie existente é o de sessão do painel da equipe,
+            estritamente necessário para o login;
+          </li>
           <li>
             não carrega recursos de terceiros ao abrir a página: as fontes são
             hospedadas no próprio site.
           </li>
         </ul>
         <p>
-          Os dados do formulário apenas compõem uma mensagem que é aberta no seu
-          WhatsApp. Só chegam à barbearia se você tocar em enviar.
+          Depois de reservar, você pode enviar o resumo pelo WhatsApp da barbearia;
+          esse envio é opcional e só acontece se você tocar em enviar.
         </p>
       </section>
 
@@ -141,6 +154,11 @@
             privacidade do próprio WhatsApp.
           </li>
           <li>
+            <strong>Provedor de hospedagem:</strong> guarda o servidor e o banco de dados
+            do site, na condição de operador, e só trata os dados conforme as nossas
+            instruções (BRASIL, 2018, art. 5º, VII, e art. 39).
+          </li>
+          <li>
             <strong>Google Maps e Waze:</strong> só são acessados se você clicar nos
             botões de rota da seção Localização.
           </li>
@@ -151,9 +169,12 @@
       <section id="retencao">
         <h2>6 Por quanto tempo guardamos</h2>
         <p>
-          A conversa de agendamento é mantida pelo tempo necessário ao atendimento.
-          Depois disso, os dados são eliminados, salvo se a lei exigir a guarda
-          (BRASIL, 2018, art. 15 e art. 16).
+          Os dados do agendamento ficam guardados por até 180 dias após o último
+          atendimento, para remarcações e para o histórico da casa. Passado esse
+          prazo, o sistema anonimiza automaticamente o nome e o telefone: o registro
+          continua apenas como estatística, sem identificar ninguém (BRASIL, 2018,
+          art. 15, art. 16 e art. 5º, III). Você pode pedir a eliminação antes disso
+          pelo canal de atendimento.
         </p>
       </section>
 
@@ -180,9 +201,11 @@
         <h2>8 Segurança</h2>
         <p>
           Adotamos medidas para proteger os dados contra acesso não autorizado, perda ou
-          vazamento (BRASIL, 2018, art. 46): o celular que recebe os agendamentos é
-          protegido por senha e de uso da equipe, e o site é servido com conexão segura
-          (HTTPS).
+          vazamento (BRASIL, 2018, art. 46): o site é servido com conexão segura
+          (HTTPS); o painel exige login, com senhas guardadas de forma criptografada
+          (hash) e bloqueio após tentativas erradas; o banco de dados tem cópias de
+          segurança; e o celular que recebe as mensagens é protegido por senha e de
+          uso da equipe.
         </p>
       </section>
 
@@ -249,6 +272,7 @@
       <p>&copy; 2026 Nova Era Barbearia. Todos os direitos reservados.</p>
       <nav class="rodapeLinks" aria-label="Links do rodapé">
         <a href="privacidade.html" aria-current="page">Política de Privacidade</a>
+        <a href="admin/">Área da equipe</a>
         <a
           href="https://wa.me/5562993548184"
           target="_blank"

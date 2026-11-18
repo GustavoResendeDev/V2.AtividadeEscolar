@@ -40,6 +40,7 @@ html { /* Esse e um comando em testes para suavizar a troca de seções ao clica
 }
 
 body {
+  overflow-x: clip; /* rede de segurança: nada pode criar rolagem lateral */
   font-family: var(--fonte-texto);
   background-color: var(--preto-0);
   color: var(--texto);
@@ -273,7 +274,7 @@ header.scrolled .logoHeader {
     justify-content: center;
   }
   header .menu li a {
-    padding: 2px 0;
+    padding: 10px 2px;
     line-height: 1.3;
   }
 }
@@ -600,7 +601,7 @@ header.scrolled .logoHeader {
 
 .pontinhos {
   position: absolute;
-  bottom: 48px;
+  bottom: 28px; /* botões têm 44px de altura; a barrinha fica no mesmo lugar de antes */
   left: 50%;
   transform: translateX(-50%);
   z-index: 10;
@@ -609,15 +610,16 @@ header.scrolled .logoHeader {
   align-items: center;
 }
 
+/* O botão tem 44px de altura (área de toque confortável); a barrinha de 4px é desenhada no meio. */
 .ponto {
+  --trilho: rgba(255, 255, 255, 0.28);
   position: relative;
-  overflow: hidden;
   width: 10px;
-  height: 4px;
+  height: 44px;
   padding: 0;
   border: 0;
   border-radius: 4px;
-  background: rgba(255, 255, 255, 0.28);
+  background: linear-gradient(var(--trilho), var(--trilho)) center / 100% 4px no-repeat;
   cursor: pointer;
   transition:
     width 0.5s var(--ease-saida),
@@ -625,18 +627,23 @@ header.scrolled .logoHeader {
 }
 
 .ponto:hover {
-  background: rgba(255, 255, 255, 0.55);
+  --trilho: rgba(255, 255, 255, 0.55);
 }
 
 .ponto.ativo {
+  --trilho: rgba(255, 255, 255, 0.22);
   width: 56px;
-  background: rgba(255, 255, 255, 0.22);
 }
 
 .ponto::after {
   content: "";
   position: absolute;
-  inset: 0;
+  top: 50%;
+  right: 0;
+  left: 0;
+  height: 4px;
+  margin-top: -2px;
+  border-radius: 4px;
   background: var(--branco);
   transform: scaleX(0);
   transform-origin: left;
@@ -899,6 +906,12 @@ header.scrolled .logoHeader {
   color: var(--branco);
   background-color: var(--preto-0);
   isolation: isolate;
+}
+
+/* Os brilhos decorativos são mais largos que a tela: corta só na horizontal.
+   "clip" (e não "hidden") preserva o position: sticky da animação da porta. */
+#local {
+  overflow-x: clip;
 }
 
 #local *,
@@ -1176,6 +1189,10 @@ footer p {
 }
 
 .rodapeLinks a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px; /* área de toque confortável */
+  margin: -11px 0;
   color: var(--texto-suave);
   text-decoration: underline;
   text-decoration-color: var(--linha-forte);
@@ -1185,6 +1202,23 @@ footer p {
 
 .rodapeLinks a:hover {
   color: var(--branco);
+}
+
+/* Telas de toque (celulares e tablets): área mínima de 44px em tudo que se toca
+   (recomendação de acessibilidade WCAG 2.5.5 e das diretrizes da Apple e do Google). */
+@media (pointer: coarse) {
+  .botao {
+    min-height: 44px;
+  }
+  header .menu li a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding-block: 0;
+  }
+  header .menu li a::after {
+    bottom: 9px;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

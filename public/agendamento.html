@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="pt-br">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#0a0a0a" />
+    <title>Agendamento | Nova Era Barbearia</title>
+    <link rel="icon" type="image/png" sizes="64x64" href="image/favicon-64.png" />
+    <link rel="apple-touch-icon" href="image/apple-touch-icon.png" />
+
+    <link rel="preload" href="fonts/oswald-latin.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="fonts/manrope-latin.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="stylesheet" href="./css/fontes.css" />
+
+    <link rel="stylesheet" href="./css/style.css" />
+    <link rel="stylesheet" href="./css/agendamento.css" />
+    <script src="./js/inicio.js"></script>
+    <script src="./js/regras.js" defer></script>
+    <script src="./js/script.js" defer></script>
+    <script src="./js/agendamento.js" defer></script>
+  </head>
+  <body class="paginaAgendamento">
+    <header>
+      <a href="index.html" class="logoLink" aria-label="Nova Era Barbearia - início">
+        <img
+          src="image/logo.webp"
+          alt="Logo da Nova Era Barbearia"
+          class="logoHeader"
+          width="256"
+          height="256"
+        />
+      </a>
+      <nav class="menu">
+        <ul>
+          <li><a href="index.html#sobre">Sobre Nós</a></li>
+          <li><a href="index.html#servicos">Serviços</a></li>
+          <li><a href="index.html#local">Localização</a></li>
+        </ul>
+      </nav>
+      <a href="agendamento.html" class="botao botaoHeader" aria-current="page">Agendar Agora</a>
+    </header>
+
+    <main class="agendamento">
+      <div class="agendamentoInfo">
+        <p class="minititulo">Reserve seu horário</p>
+        <h1 class="agendamentoTitulo">Agendamento</h1>
+        <p class="agendamentoTexto">
+          Escolha o serviço, o barbeiro, o dia e um dos horários livres. A reserva
+          fica registrada na hora e a mensagem chega pronta no WhatsApp da barbearia.
+        </p>
+        <ol class="passosAgendamento">
+          <li><span>1</span> Escolha serviço e barbeiro</li>
+          <li><span>2</span> Veja os horários livres</li>
+          <li><span>3</span> Receba a confirmação no WhatsApp</li>
+        </ol>
+        <dl class="agendamentoDetalhes">
+          <div>
+            <dt>Funcionamento</dt>
+            <dd>Segunda a sábado, das 8h às 19h</dd>
+          </div>
+          <div>
+            <dt>WhatsApp</dt>
+            <dd><a href="https://wa.me/5562993548184" target="_blank" rel="noopener noreferrer">(62) 99354-8184</a></dd>
+          </div>
+          <div>
+            <dt>Endereço</dt>
+            <dd>R. José Gomes Bailão, nº 579 – Cidade Jardim, Goiânia – GO</dd>
+          </div>
+        </dl>
+      </div>
+
+      <div class="painelAgendamento">
+        <noscript>
+          <p class="avisoSistema">
+            O agendamento online precisa de JavaScript. Você também pode agendar direto pelo
+            <a href="https://wa.me/5562993548184">WhatsApp (62) 99354-8184</a>.
+          </p>
+        </noscript>
+
+        <p class="avisoSistema" id="avisoSistema" role="alert" hidden></p>
+
+        <form id="formAgendamento" class="formAgendamento" novalidate aria-busy="true">
+          <div class="campo">
+            <label for="servico">Serviço</label>
+            <select id="servico" name="servico" required disabled>
+              <option value="" disabled selected>Carregando serviços…</option>
+            </select>
+            <span class="erroCampo" aria-live="polite"></span>
+          </div>
+
+          <fieldset class="campo campoBarbeiro">
+            <legend>Barbeiro</legend>
+            <div class="opcoesBarbeiro" id="opcoesBarbeiro"></div>
+            <span class="erroCampo" aria-live="polite"></span>
+          </fieldset>
+
+          <div class="linhaCampos">
+            <div class="campo">
+              <label for="data">Data</label>
+              <input type="date" id="data" name="data" required />
+              <span class="erroCampo" aria-live="polite"></span>
+            </div>
+
+            <div class="campo">
+              <label for="hora">Horário</label>
+              <select id="hora" name="hora" required disabled aria-describedby="dicaHora">
+                <option value="" disabled selected>Escolha serviço e data</option>
+              </select>
+              <span class="dicaCampo" id="dicaHora" aria-live="polite"></span>
+              <span class="erroCampo" aria-live="polite"></span>
+            </div>
+          </div>
+
+          <div class="linhaCampos">
+            <div class="campo">
+              <label for="nome">Nome completo</label>
+              <input
+                type="text"
+                id="nome"
+                name="nome"
+                autocomplete="name"
+                placeholder="Seu nome"
+                minlength="3"
+                maxlength="80"
+                required
+              />
+              <span class="erroCampo" aria-live="polite"></span>
+            </div>
+
+            <div class="campo">
+              <label for="telefone">WhatsApp</label>
+              <input
+                type="tel"
+                id="telefone"
+                name="telefone"
+                autocomplete="tel-national"
+                inputmode="tel"
+                placeholder="(62) 99999-9999"
+                maxlength="16"
+                required
+              />
+              <span class="erroCampo" aria-live="polite"></span>
+            </div>
+          </div>
+
+          <div class="campo campoConsentimento">
+            <label class="consentimento">
+              <input type="checkbox" id="consentimento" name="consentimento" required />
+              <span>
+                Li e concordo com a
+                <a href="privacidade.html" target="_blank" rel="noopener">Política de Privacidade</a>.
+                Meus dados serão usados apenas para este agendamento.
+              </span>
+            </label>
+            <span class="erroCampo" aria-live="polite"></span>
+          </div>
+
+          <button type="submit" class="botao botaoEnviar">Confirmar agendamento</button>
+          <p class="avisoEnvio">
+            O horário fica reservado assim que você confirmar. Depois, é só enviar o
+            resumo pelo WhatsApp da barbearia.
+          </p>
+        </form>
+
+        <div class="confirmacao" id="confirmacao" hidden tabindex="-1">
+          <p class="selo">Reserva registrada</p>
+          <h2>Horário reservado</h2>
+          <p class="confirmacaoTexto"></p>
+          <dl class="resumo"></dl>
+          <div class="confirmacaoBotoes">
+            <a class="botao" id="abrirWhatsapp" href="https://wa.me/5562993548184" target="_blank" rel="noopener noreferrer">
+              Enviar no WhatsApp
+            </a>
+            <button type="button" class="botao botaoContorno" id="novoAgendamento">
+              Novo agendamento
+            </button>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <footer>
+      <img
+        src="image/logo.webp"
+        alt=""
+        class="logoRodape"
+        width="256"
+        height="256"
+        loading="lazy"
+      />
+      <p>&copy; 2026 Nova Era Barbearia. Todos os direitos reservados.</p>
+      <nav class="rodapeLinks" aria-label="Links do rodapé">
+        <a href="privacidade.html">Política de Privacidade</a>
+        <a href="admin/">Área da equipe</a>
+        <a
+          href="https://wa.me/5562993548184"
+          target="_blank"
+          rel="noopener noreferrer"
+          >WhatsApp (62) 99354-8184</a
+        >
+      </nav>
+    </footer>
+  </body>
+</html>

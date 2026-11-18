@@ -14,6 +14,16 @@ banco de dados e painel para a equipe organizar a agenda.
 Todas as telas são responsivas e testadas automaticamente em 9 tamanhos, do iPhone SE (320 px)
 ao Full HD (1920 px), incluindo tablets em retrato e paisagem.
 
+## Documentação do trabalho
+
+| Entregável | Arquivo |
+| --- | --- |
+| Documentação do projeto e do sistema (ABNT, 7 fases) | `docs/Documentacao-Sistema-Nova-Era.docx` / `.pdf` |
+| Manual do usuário e guia de treinamento | `docs/Manual-do-Usuario-Nova-Era.docx` / `.pdf` |
+| Slides da apresentação (roteiro nas notas) | `docs/Apresentacao-Nova-Era.pptx` / `.pdf` |
+| Diagramas do projeto e do sistema (PNG, SVG e fonte Mermaid) | `docs/diagramas/` |
+| Capturas de tela (desktop, tablet e celular) | `docs/capturas/` |
+
 ## Tecnologias
 
 - **Front-end:** HTML5, CSS3 e JavaScript puro (sem framework), fontes hospedadas no próprio site.

@@ -103,10 +103,31 @@
   const livre = (ocupados, ini, fim) => !ocupados.some((o) => R().sobrepoe(ini, fim, o.inicio_min, o.fim_min));
   const minutoMinimo = (data) => (data === R().hojeISO() ? R().agoraEmBrasilia().minutos + 1 : 0);
 
-  function disponibilidade({ data, servico: servicoId, barbeiro: barbeiroId }) {
+  const MAX_SERVICOS = 5;
+
+  /* Lista de serviços do pedido (igual ao server/agenda.js): aceita servicoIds (vários)
+     ou servicoId (um só) e devolve duração, preço e nomes somados. */
+  function servicosDoPedido({ servicoIds, servicoId }) {
+    let ids = Array.isArray(servicoIds) ? servicoIds : servicoId != null && servicoId !== "" ? [servicoId] : [];
+    ids = [...new Set(ids.map(Number).filter((n) => Number.isInteger(n) && n > 0))];
+    if (!ids.length) throw new ErroNegocio(422, "Escolha pelo menos um serviço.", "servico");
+    if (ids.length > MAX_SERVICOS)
+      throw new ErroNegocio(422, `Escolha no máximo ${MAX_SERVICOS} serviços por agendamento.`, "servico");
+    const lista = ids.map((id) => {
+      const servico = servicoAtivo(id);
+      if (!servico) throw new ErroNegocio(422, "Um dos serviços escolhidos não está disponível.", "servico");
+      return servico;
+    });
+    const duracao = lista.reduce((t, s) => t + s.duracao_min, 0);
+    const { abre, fecha } = R().FUNCIONAMENTO;
+    if (duracao > fecha - abre)
+      throw new ErroNegocio(422, "Os serviços escolhidos não cabem num mesmo dia. Divida em dois agendamentos.", "servico");
+    return { lista, duracao, preco: lista.reduce((t, s) => t + s.preco_centavos, 0), nome: lista.map((s) => s.nome).join(", ") };
+  }
+
+  function disponibilidade({ data, servico: servicoId, servicos, barbeiro: barbeiroId }) {
     validarData(data);
-    const servico = servicoAtivo(servicoId);
-    if (!servico) throw new ErroNegocio(422, "Escolha um serviço.", "servico");
+    const { duracao } = servicosDoPedido({ servicoId, servicoIds: servicos ? String(servicos).split(",") : null });
     let barbeiros = BARBEIROS;
     if (barbeiroId) {
       const b = barbeiroAtivo(barbeiroId);
@@ -118,14 +139,15 @@
     return {
       data,
       horarios: R()
-        .gradeDeHorarios(servico.duracao_min)
+        .gradeDeHorarios(duracao)
         .filter((ini) => ini >= minimo)
-        .map((ini) => ({ hora: R().paraHora(ini), disponivel: agendas.some((o) => livre(o, ini, ini + servico.duracao_min)) })),
+        .map((ini) => ({ hora: R().paraHora(ini), disponivel: agendas.some((o) => livre(o, ini, ini + duracao)) })),
     };
   }
 
   function formatar(a) {
-    const s = servicoAtivo(a.servico_id);
+    const ids = a.servico_ids || [a.servico_id];
+    const s = servicoAtivo(ids[0]);
     const b = barbeiroAtivo(a.barbeiro_id);
     return {
       id: a.id,
@@ -136,7 +158,7 @@
       preco: a.preco_centavos / 100,
       status: a.status,
       cliente: { nome: a.cliente_nome, telefone: formatarTelefone(a.cliente_telefone), whatsapp: a.cliente_telefone ? `55${a.cliente_telefone}` : null },
-      servico: { id: s.id, nome: s.nome },
+      servico: { id: s.id, nome: ids.map((id) => servicoAtivo(id).nome).join(", "), quantidade: ids.length },
       barbeiro: { id: b.id, nome: b.nome },
       proximosStatus: TRANSICOES[a.status],
     };
@@ -156,15 +178,16 @@
     const telefone = normalizarTelefone(p.telefone);
     if (!telefone) throw new ErroNegocio(422, "Informe um WhatsApp válido, com DDD.", "telefone");
     if (p.consentimento !== true) throw new ErroNegocio(422, "Para agendar, aceite a Política de Privacidade.", "consentimento");
-    const servico = servicoAtivo(p.servicoId);
-    if (!servico) throw new ErroNegocio(422, "Escolha um serviço.", "servico");
+    const servicos = servicosDoPedido(p);
     validarData(p.data);
     const inicio = r.paraMinutos(p.hora);
     if (Number.isNaN(inicio)) throw new ErroNegocio(422, "Escolha um horário.", "hora");
-    const fim = inicio + servico.duracao_min;
+    const fim = inicio + servicos.duracao;
     const { abre, fecha, intervaloGrade } = r.FUNCIONAMENTO;
-    if (inicio < abre || fim > fecha || (inicio - abre) % intervaloGrade !== 0)
+    if (inicio < abre || (inicio - abre) % intervaloGrade !== 0)
       throw new ErroNegocio(422, "Esse horário está fora do nosso funcionamento.", "hora");
+    if (fim > fecha)
+      throw new ErroNegocio(422, "Os serviços escolhidos terminariam depois das 19h. Escolha um horário mais cedo.", "hora");
     if (inicio < minutoMinimo(p.data)) throw new ErroNegocio(422, "Esse horário já passou. Escolha outro.", "hora");
 
     let barbeiro = null;
@@ -188,12 +211,13 @@
       codigo: [...bytes].map((x) => x.toString(16).padStart(2, "0")).join("").toUpperCase(),
       cliente_nome: nome,
       cliente_telefone: telefone,
-      servico_id: servico.id,
+      servico_id: servicos.lista[0].id,
+      servico_ids: servicos.lista.map((s) => s.id),
       barbeiro_id: barbeiro.id,
       data: p.data,
       inicio_min: inicio,
       fim_min: fim,
-      preco_centavos: servico.preco_centavos,
+      preco_centavos: servicos.preco,
       status: "pendente",
     };
     banco.agendamentos.push(registro);
@@ -206,7 +230,7 @@
       "",
       `🔖 *Código:* ${a.codigo}`,
       `👤 *Cliente:* ${nome}`,
-      `💈 *Serviço:* ${a.servico.nome}`,
+      `💈 *${a.servico.quantidade > 1 ? "Serviços" : "Serviço"}:* ${a.servico.nome}`,
       `💰 *Valor:* R$ ${a.preco.toFixed(2).replace(".", ",")}`,
       `📅 *Data:* ${formatarDataBR(a.data)}`,
       `⏰ *Horário:* ${a.hora} às ${a.termino}`,
@@ -275,7 +299,7 @@
     if (metodo === "GET" && caminho === "/servicos") return [200, SERVICOS];
     if (metodo === "GET" && caminho === "/barbeiros") return [200, BARBEIROS];
     if (metodo === "GET" && caminho === "/disponibilidade")
-      return [200, disponibilidade({ data: q.get("data"), servico: q.get("servico"), barbeiro: q.get("barbeiro") })];
+      return [200, disponibilidade({ data: q.get("data"), servico: q.get("servico"), servicos: q.get("servicos"), barbeiro: q.get("barbeiro") })];
     if (metodo === "POST" && caminho === "/agendamentos") return [201, criarAgendamento(corpo || {})];
     if (metodo === "GET" && caminho === "/sessao") return [200, { usuario: usuarioDaSessao() }];
     if (metodo === "POST" && caminho === "/admin/login") {

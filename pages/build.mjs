@@ -22,8 +22,9 @@ for (const arquivo of paginas(SAIDA)) {
   const nivel = relative(SAIDA, arquivo).split(sep).length - 1;
   const caminho = nivel ? "../".repeat(nivel) + "js/api-demo.js" : "./js/api-demo.js";
   if (arquivo.endsWith("404.html")) {
+    // A 404 é servida em qualquer endereço: o <base> faz os caminhos relativos apontarem para o site.
     html = html.replace(/(href|src)="\/(?!\/)/g, `$1="${BASE}`);
-    html = html.replace("<head>", `<head>\n    <script src="${BASE}js/api-demo.js"></script>`);
+    html = html.replace("<head>", `<head>\n    <base href="${BASE}" />\n    <script src="${BASE}js/api-demo.js"></script>`);
   } else {
     html = html.replace("<head>", `<head>\n    <script src="${caminho}"></script>`);
   }

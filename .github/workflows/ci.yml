@@ -1,0 +1,23 @@
+# Integração contínua: roda todos os testes a cada push e pull request.
+name: Testes
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  testes:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Testes unitários e de API
+        run: npm test
+      - name: Instala o navegador para o teste de ponta a ponta
+        run: npm i --no-save playwright@1.63.0 && npx playwright install --with-deps chromium
+      - name: Teste de ponta a ponta
+        run: npm run test:e2e

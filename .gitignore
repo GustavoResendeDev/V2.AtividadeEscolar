@@ -1,0 +1,9 @@
+node_modules/
+dados/
+backups/
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+.env
+test-results/

@@ -1,0 +1,22 @@
+{
+  "name": "nova-era-barbearia",
+  "version": "2.0.0",
+  "description": "Sistema de agendamento da Nova Era Barbearia: site institucional, agendamento online com banco de dados e painel do barbeiro.",
+  "private": true,
+  "main": "server/index.js",
+  "engines": {
+    "node": ">=22.5"
+  },
+  "scripts": {
+    "start": "node --disable-warning=ExperimentalWarning --env-file-if-exists=.env server/index.js",
+    "dev": "node --disable-warning=ExperimentalWarning --env-file-if-exists=.env --watch server/index.js",
+    "test": "node --disable-warning=ExperimentalWarning --test \"tests/unit/*.test.js\" \"tests/api/*.test.js\"",
+    "test:e2e": "node --disable-warning=ExperimentalWarning --test \"tests/e2e/*.test.js\"",
+    "usuario": "node --disable-warning=ExperimentalWarning scripts/criar-usuario.js",
+    "backup": "node --disable-warning=ExperimentalWarning scripts/backup.js"
+  },
+  "dependencies": {
+    "express": "4.22.3"
+  },
+  "license": "UNLICENSED"
+}

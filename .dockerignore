@@ -1,0 +1,7 @@
+node_modules
+dados
+backups
+docs
+tests
+.git
+.env

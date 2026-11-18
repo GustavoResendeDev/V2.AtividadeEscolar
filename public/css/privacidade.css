@@ -1,0 +1,130 @@
+/* Página de texto longo (Política de Privacidade) */
+.paginaTexto {
+  background-color: var(--preto-0);
+}
+
+.documento {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: calc(var(--altura-header) + 70px) 6% 90px;
+  color: var(--texto);
+  font-size: 1rem;
+  line-height: 1.75;
+}
+
+.documento h1 {
+  margin: 0 0 14px;
+  font-family: var(--fonte-titulo);
+  font-size: clamp(2.4rem, 6vw, 3.6rem);
+  font-weight: 700;
+  text-transform: uppercase;
+  line-height: 1;
+  color: var(--branco);
+}
+
+.documento .atualizacao {
+  margin-bottom: 32px;
+  font-size: 0.88rem;
+  color: var(--texto-apagado);
+}
+
+.documento h2 {
+  margin: 48px 0 14px;
+  font-family: var(--fonte-titulo);
+  font-size: 1.35rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--branco);
+  scroll-margin-top: calc(var(--altura-header) + 20px);
+}
+
+.documento p,
+.documento ul,
+.documento ol {
+  margin-bottom: 16px;
+}
+
+.documento ul,
+.documento ol {
+  padding-left: 1.4em;
+}
+
+.documento li {
+  margin-bottom: 6px;
+}
+
+.documento li::marker {
+  color: var(--texto-apagado);
+}
+
+.documento strong {
+  color: var(--branco);
+  font-weight: 600;
+}
+
+.documento a {
+  color: var(--branco);
+  text-decoration: underline;
+  text-decoration-color: var(--linha-forte);
+  text-underline-offset: 4px;
+}
+
+.documento a:hover {
+  text-decoration-color: var(--branco);
+}
+
+.sumario {
+  margin: 32px 0;
+  padding: 24px 28px;
+  background: var(--preto-1);
+  border: 1px solid var(--linha);
+  border-radius: var(--raio-medio);
+}
+
+.sumario h2 {
+  margin-top: 0;
+  font-size: 1rem;
+  letter-spacing: 0.12em;
+  color: var(--texto-suave);
+}
+
+.sumario ol {
+  margin: 0;
+}
+
+.sumario a {
+  display: inline-block;
+  padding: 6px 0; /* área de toque confortável no celular */
+  text-decoration: none;
+  color: var(--texto);
+}
+
+.sumario a:hover {
+  color: var(--branco);
+  text-decoration: underline;
+}
+
+.destaque {
+  padding: 16px 20px;
+  background: var(--preto-1);
+  border: 1px solid var(--linha);
+  border-radius: var(--raio-pequeno);
+}
+
+/* Referências no padrão ABNT NBR 6023: alinhadas à esquerda, espaço simples entre linhas
+   e uma linha em branco entre cada referência. */
+.referencias {
+  margin-top: 56px;
+  padding-top: 8px;
+  border-top: 1px solid var(--linha);
+}
+
+.referencias p {
+  margin-bottom: 18px;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  text-align: left;
+  color: var(--texto-suave);
+  overflow-wrap: anywhere;
+}

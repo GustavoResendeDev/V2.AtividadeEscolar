@@ -1,29 +1,23 @@
 flowchart TB
   subgraph CL["APRESENTAÇÃO"]
-    TELAS["5 telas responsivas<br/>Início · Agendamento · Privacidade · Login · Painel<br/>HTML5 · CSS3 · JavaScript"]
-    RJ["regras.js<br/>funcionamento, feriados, fuso"]:::comp
+    TELAS["5 telas responsivas + página de erro<br/>HTML5 · CSS3 · JavaScript · regras.js"]
   end
-  subgraph SV["APLICAÇÃO (Node.js)"]
-    SEG["Segurança<br/>CSP · cabeçalhos · só JSON"]
-    ROT["API REST<br/>app.js"]
-    AUT["Autenticação<br/>auth.js · scrypt · sessões"]
-    AG["Regras de negócio<br/>agenda.js"]
-    MAN["Manutenção diária<br/>anonimização LGPD"]
+  subgraph SV["APLICAÇÃO"]
+    direction TB
+    SEG["Segurança<br/>CSP · cabeçalhos · só JSON"] --> ROT["API REST<br/>app.js"]
+    ROT --> AUT["Autenticação<br/>auth.js · scrypt · sessões"]
+    ROT --> AG["Regras de negócio<br/>agenda.js + regras.js<br/>agenda · relatório · remarcação"]
+    MAN["Manutenção diária<br/>anonimização LGPD"] --> AG
   end
   subgraph DB["DADOS"]
-    SQL[("SQLite<br/>novaera.db")]
-    BK[("Backups")]
+    SQL[("SQLite<br/>novaera.db")] -. "npm run backup" .-> BK[("Backups")]
   end
-  WA["WhatsApp<br/>wa.me"]:::ext
+  WA["WhatsApp (wa.me)<br/>resumo do agendamento"]:::ext
+  DEMO["Modo demonstração<br/>api-demo.js no GitHub Pages<br/>dados no navegador"]:::demo
   TELAS -- "HTTPS · JSON" --> SEG
-  SEG --> ROT
-  ROT --> AUT
-  ROT --> AG
-  MAN --> AG
   AUT --> SQL
   AG --> SQL
-  SQL -. "npm run backup" .-> BK
-  TELAS -. "resumo do agendamento" .-> WA
-  RJ -. "mesmo arquivo" .-> AG
-  classDef comp fill:#e4e4e7,stroke:#18181b
+  TELAS -.-> WA
+  TELAS -.-> DEMO
   classDef ext fill:#dcfce7,stroke:#15803d
+  classDef demo fill:#fef9c3,stroke:#a16207

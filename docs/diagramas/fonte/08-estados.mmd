@@ -3,6 +3,7 @@ stateDiagram-v2
   state "concluído" as concluido
   state "pendente (a confirmar)" as pendente
   [*] --> pendente: cliente agenda pelo site
+  [*] --> confirmado: equipe agenda manualmente
   pendente --> confirmado: barbeiro confirma
   pendente --> cancelado: cancela
   confirmado --> concluido: atendimento feito
@@ -12,3 +13,4 @@ stateDiagram-v2
   faltou --> [*]
   cancelado --> [*]
   note right of cancelado: libera o horário na agenda
+  note left of confirmado: pendente e confirmado podem ser remarcados (nova data, horário ou barbeiro) sem mudar a situação

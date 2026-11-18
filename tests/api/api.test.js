@@ -55,6 +55,38 @@ describe("API pública", () => {
     assert.equal(d.json.horarios.find((h) => h.hora === "14:00").disponivel, false);
   });
 
+  test("cliente escolhe vários serviços: soma duração e valor, e a agenda reflete o tempo total", async () => {
+    const r = await s.req("POST", "/api/agendamentos", {
+      corpo: corpo({ servicoId: undefined, servicoIds: [1, 7, 5], barbeiroId: 3, hora: "09:00", telefone: "62988883333" }),
+    });
+    assert.equal(r.status, 201);
+    assert.equal(r.json.servico, "Corte Masculino, Barba Tradicional / Modelada, Hidratação");
+    assert.equal(r.json.termino, "11:00"); // 60 + 30 + 30 min
+    assert.equal(r.json.preco, 105); // 40 + 35 + 30
+    assert.match(decodeURIComponent(r.json.whatsapp), /\*Serviços:\* Corte Masculino, Barba Tradicional/);
+
+    const d = await s.req("GET", "/api/disponibilidade?data=2026-11-21&servicos=1,7&barbeiro=3");
+    assert.equal(d.status, 200);
+    const livre = (h) => d.json.horarios.find((x) => x.hora === h)?.disponivel;
+    assert.equal(livre("08:00"), false); // 08:00 + 1h30 invade 09:00
+    assert.equal(livre("10:30"), false);
+    assert.equal(livre("11:00"), true);
+    assert.equal(d.json.horarios.at(-1).hora, "17:30"); // 1h30 precisa terminar até 19h
+  });
+
+  test("vários serviços: recusa lista vazia, serviço inexistente e fim depois do expediente", async () => {
+    const vazio = await s.req("POST", "/api/agendamentos", { corpo: corpo({ servicoId: undefined, servicoIds: [] }) });
+    assert.equal(vazio.status, 422);
+    assert.equal(vazio.json.campo, "servico");
+    const inexistente = await s.req("POST", "/api/agendamentos", { corpo: corpo({ servicoIds: [1, 999] }) });
+    assert.equal(inexistente.status, 422);
+    const tarde = await s.req("POST", "/api/agendamentos", {
+      corpo: corpo({ servicoIds: [3, 4], hora: "15:00", barbeiroId: 2, telefone: "62988884444" }),
+    });
+    assert.equal(tarde.status, 422);
+    assert.equal(tarde.json.campo, "hora");
+  });
+
   test("POST com dados inválidos devolve 422 indicando o campo", async () => {
     const r = await s.req("POST", "/api/agendamentos", { corpo: corpo({ consentimento: false }) });
     assert.equal(r.status, 422);

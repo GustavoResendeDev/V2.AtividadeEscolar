@@ -47,6 +47,17 @@ CREATE TABLE IF NOT EXISTS agendamentos (
 );
 CREATE INDEX IF NOT EXISTS idx_agendamentos_agenda ON agendamentos (data, barbeiro_id, status);
 
+-- Serviços de cada agendamento (o cliente pode escolher mais de um).
+-- agendamentos.servico_id continua guardando o primeiro, por compatibilidade.
+CREATE TABLE IF NOT EXISTS agendamento_servicos (
+  agendamento_id  INTEGER NOT NULL REFERENCES agendamentos(id) ON DELETE CASCADE,
+  servico_id      INTEGER NOT NULL REFERENCES servicos(id),
+  ordem           INTEGER NOT NULL,
+  duracao_min     INTEGER NOT NULL,
+  preco_centavos  INTEGER NOT NULL,
+  PRIMARY KEY (agendamento_id, servico_id)
+);
+
 CREATE TABLE IF NOT EXISTS usuarios (
   id           INTEGER PRIMARY KEY,
   nome         TEXT    NOT NULL,

@@ -58,6 +58,40 @@ function criarAgenda(db, { agora = () => new Date() } = {}) {
       .all();
   }
 
+  const MAX_SERVICOS = 5;
+
+  /* Lista de serviços do pedido: aceita servicoIds (vários) ou servicoId (um só).
+     Devolve os serviços na ordem escolhida, com a duração e o preço somados. */
+  function servicosDoPedido({ servicoIds, servicoId }) {
+    let ids = Array.isArray(servicoIds) ? servicoIds : servicoId != null && servicoId !== "" ? [servicoId] : [];
+    ids = [...new Set(ids.map(Number).filter((n) => Number.isInteger(n) && n > 0))];
+    if (!ids.length) throw new ErroNegocio(422, "Escolha pelo menos um serviço.", "servico");
+    if (ids.length > MAX_SERVICOS)
+      throw new ErroNegocio(422, `Escolha no máximo ${MAX_SERVICOS} serviços por agendamento.`, "servico");
+    const lista = ids.map((id) => {
+      const servico = servicoAtivo(id);
+      if (!servico) throw new ErroNegocio(422, "Um dos serviços escolhidos não está disponível.", "servico");
+      return servico;
+    });
+    const duracao = lista.reduce((t, s) => t + s.duracao_min, 0);
+    const { abre, fecha } = regras.FUNCIONAMENTO;
+    if (duracao > fecha - abre)
+      throw new ErroNegocio(422, "Os serviços escolhidos não cabem num mesmo dia. Divida em dois agendamentos.", "servico");
+    return {
+      lista,
+      duracao,
+      preco: lista.reduce((t, s) => t + s.preco_centavos, 0),
+      nome: lista.map((s) => s.nome).join(", "),
+    };
+  }
+
+  function gravarServicos(agendamentoId, servicos) {
+    const ins = db.prepare(
+      "INSERT INTO agendamento_servicos (agendamento_id, servico_id, ordem, duracao_min, preco_centavos) VALUES (?, ?, ?, ?, ?)"
+    );
+    servicos.lista.forEach((s, i) => ins.run(agendamentoId, s.id, i + 1, s.duracao_min, s.preco_centavos));
+  }
+
   function listarBarbeiros() {
     return db.prepare("SELECT id, nome, especialidade FROM barbeiros WHERE ativo = 1 ORDER BY id").all();
   }
@@ -97,10 +131,9 @@ function criarAgenda(db, { agora = () => new Date() } = {}) {
 
   /* Horários de início do serviço na data. Com barbeiro, olha só a agenda dele;
      sem barbeiro ("sem preferência"), o horário está livre se algum barbeiro estiver livre. */
-  function disponibilidade({ data, servicoId, barbeiroId }) {
+  function disponibilidade({ data, servicoId, servicoIds, barbeiroId }) {
     validarData(data);
-    const servico = servicoAtivo(servicoId);
-    if (!servico) throw new ErroNegocio(422, "Escolha um serviço.", "servico");
+    const { duracao } = servicosDoPedido({ servicoIds, servicoId });
 
     let barbeiros;
     if (barbeiroId) {
@@ -114,11 +147,11 @@ function criarAgenda(db, { agora = () => new Date() } = {}) {
     const agendas = barbeiros.map((b) => ocupacoes(data, b.id));
     const minimo = minutoMinimo(data);
     return regras
-      .gradeDeHorarios(servico.duracao_min)
+      .gradeDeHorarios(duracao)
       .filter((inicio) => inicio >= minimo)
       .map((inicio) => ({
         hora: regras.paraHora(inicio),
-        disponivel: agendas.some((ocupados) => livre(ocupados, inicio, inicio + servico.duracao_min)),
+        disponivel: agendas.some((ocupados) => livre(ocupados, inicio, inicio + duracao)),
       }));
   }
 
@@ -131,16 +164,17 @@ function criarAgenda(db, { agora = () => new Date() } = {}) {
     if (pedido.consentimento !== true)
       throw new ErroNegocio(422, "Para agendar, aceite a Política de Privacidade.", "consentimento");
 
-    const servico = servicoAtivo(pedido.servicoId);
-    if (!servico) throw new ErroNegocio(422, "Escolha um serviço.", "servico");
+    const servicos = servicosDoPedido(pedido);
     validarData(pedido.data);
 
     const inicio = regras.paraMinutos(pedido.hora);
     if (Number.isNaN(inicio)) throw new ErroNegocio(422, "Escolha um horário.", "hora");
-    const fim = inicio + servico.duracao_min;
+    const fim = inicio + servicos.duracao;
     const { abre, fecha, intervaloGrade } = regras.FUNCIONAMENTO;
-    if (inicio < abre || fim > fecha || (inicio - abre) % intervaloGrade !== 0)
+    if (inicio < abre || (inicio - abre) % intervaloGrade !== 0)
       throw new ErroNegocio(422, "Esse horário está fora do nosso funcionamento.", "hora");
+    if (fim > fecha)
+      throw new ErroNegocio(422, "Os serviços escolhidos terminariam depois das 19h. Escolha um horário mais cedo.", "hora");
     if (inicio < minutoMinimo(pedido.data))
       throw new ErroNegocio(422, "Esse horário já passou. Escolha outro.", "hora");
 
@@ -149,7 +183,7 @@ function criarAgenda(db, { agora = () => new Date() } = {}) {
       barbeiro = barbeiroAtivo(pedido.barbeiroId);
       if (!barbeiro) throw new ErroNegocio(422, "Escolha um barbeiro válido.", "barbeiro");
     }
-    return { nome, telefone, servico, barbeiro, inicio, fim, data: pedido.data };
+    return { nome, telefone, servicos, barbeiro, inicio, fim, data: pedido.data };
   }
 
   // Sem preferência: o barbeiro livre com menos atendimentos no dia (divide o trabalho).
@@ -192,7 +226,8 @@ function criarAgenda(db, { agora = () => new Date() } = {}) {
            VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
            RETURNING id`
         )
-        .get(codigo, cliente.id, p.servico.id, barbeiro.id, p.data, p.inicio, p.fim, p.servico.preco_centavos);
+        .get(codigo, cliente.id, p.servicos.lista[0].id, barbeiro.id, p.data, p.inicio, p.fim, p.servicos.preco);
+      gravarServicos(id, p.servicos);
       db.prepare("INSERT INTO historico_status (agendamento_id, de, para) VALUES (?, NULL, 'pendente')").run(id);
       return buscar(id);
     });
@@ -201,7 +236,13 @@ function criarAgenda(db, { agora = () => new Date() } = {}) {
   const SELECT_AGENDAMENTO = `
     SELECT a.id, a.codigo, a.data, a.inicio_min, a.fim_min, a.preco_centavos, a.status, a.criado_em,
            c.nome AS cliente_nome, c.telefone AS cliente_telefone,
-           s.id AS servico_id, s.nome AS servico_nome,
+           s.id AS servico_id,
+           COALESCE(
+             (SELECT group_concat(s2.nome, ', ' ORDER BY x.ordem)
+                FROM agendamento_servicos x JOIN servicos s2 ON s2.id = x.servico_id
+               WHERE x.agendamento_id = a.id),
+             s.nome) AS servico_nome,
+           (SELECT COUNT(*) FROM agendamento_servicos x WHERE x.agendamento_id = a.id) AS qtd_servicos,
            b.id AS barbeiro_id, b.nome AS barbeiro_nome
       FROM agendamentos a
       JOIN clientes  c ON c.id = a.cliente_id
@@ -219,7 +260,7 @@ function criarAgenda(db, { agora = () => new Date() } = {}) {
       preco: linha.preco_centavos / 100,
       status: linha.status,
       cliente: { nome: linha.cliente_nome, telefone: formatarTelefone(linha.cliente_telefone), whatsapp: linha.cliente_telefone ? `55${linha.cliente_telefone}` : null },
-      servico: { id: linha.servico_id, nome: linha.servico_nome },
+      servico: { id: linha.servico_id, nome: linha.servico_nome, quantidade: Math.max(1, linha.qtd_servicos) },
       barbeiro: { id: linha.barbeiro_id, nome: linha.barbeiro_nome },
       proximosStatus: TRANSICOES[linha.status],
     };
@@ -380,9 +421,8 @@ function criarAgenda(db, { agora = () => new Date() } = {}) {
       telefone = normalizarTelefone(pedido.telefone);
       if (!telefone) throw new ErroNegocio(422, "Telefone inválido. Use DDD + número.", "telefone");
     }
-    const servico = servicoAtivo(pedido.servicoId);
-    if (!servico) throw new ErroNegocio(422, "Escolha um serviço.", "servico");
-    const { inicio, fim } = validarHorarioEquipe(pedido.data, pedido.hora, servico.duracao_min);
+    const servicos = servicosDoPedido(pedido);
+    const { inicio, fim } = validarHorarioEquipe(pedido.data, pedido.hora, servicos.duracao);
     const escolhido = barbeiroDaEquipe(pedido.barbeiroId, usuario);
     const status = pedido.status === "concluido" ? "concluido" : "confirmado";
 
@@ -413,7 +453,8 @@ function criarAgenda(db, { agora = () => new Date() } = {}) {
            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
            RETURNING id`
         )
-        .get(codigo, cliente.id, servico.id, barbeiro.id, pedido.data, inicio, fim, servico.preco_centavos, status);
+        .get(codigo, cliente.id, servicos.lista[0].id, barbeiro.id, pedido.data, inicio, fim, servicos.preco, status);
+      gravarServicos(id, servicos);
       db.prepare("INSERT INTO historico_status (agendamento_id, de, para, usuario_id) VALUES (?, NULL, ?, ?)").run(
         id,
         status,

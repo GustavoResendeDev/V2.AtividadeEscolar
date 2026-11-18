@@ -1,4 +1,5 @@
 /* Aplicação web: entrega as páginas (pasta public/) e a API REST em /api. */
+const fs = require("node:fs");
 const path = require("node:path");
 const express = require("express");
 const { criarAuth, criarLimitador } = require("./auth");
@@ -36,7 +37,7 @@ function mensagemParaBarbearia(a) {
     "",
     `🔖 *Código:* ${a.codigo}`,
     `👤 *Cliente:* ${a.cliente.nome}`,
-    `💈 *Serviço:* ${a.servico.nome}`,
+    `💈 *${a.servico.quantidade > 1 ? "Serviços" : "Serviço"}:* ${a.servico.nome}`,
     `💰 *Valor:* R$ ${a.preco.toFixed(2).replace(".", ",")}`,
     `📅 *Data:* ${formatarDataBR(a.data)}`,
     `⏰ *Horário:* ${a.hora} às ${a.termino}`,
@@ -88,10 +89,12 @@ function criarApp({ db, producao = false, agora = () => new Date(), log = consol
   api.get("/barbeiros", (req, res) => res.json(agenda.listarBarbeiros()));
 
   api.get("/disponibilidade", (req, res) => {
-    const { data, servico, barbeiro } = req.query;
+    // ?servicos=1,7 (vários) ou ?servico=1 (um só)
+    const { data, servico, servicos, barbeiro } = req.query;
+    const servicoIds = servicos ? String(servicos).split(",") : null;
     res.json({
       data,
-      horarios: agenda.disponibilidade({ data, servicoId: servico, barbeiroId: barbeiro || null }),
+      horarios: agenda.disponibilidade({ data, servicoId: servico, servicoIds, barbeiroId: barbeiro || null }),
     });
   });
 
@@ -101,6 +104,7 @@ function criarApp({ db, producao = false, agora = () => new Date(), log = consol
       nome: b.nome,
       telefone: b.telefone,
       servicoId: b.servicoId,
+      servicoIds: b.servicoIds,
       barbeiroId: b.barbeiroId || null,
       data: b.data,
       hora: b.hora,
@@ -170,6 +174,7 @@ function criarApp({ db, producao = false, agora = () => new Date(), log = consol
         nome: b.nome,
         telefone: b.telefone,
         servicoId: b.servicoId,
+        servicoIds: b.servicoIds,
         barbeiroId: b.barbeiroId || null,
         data: b.data,
         hora: b.hora,
@@ -209,7 +214,11 @@ function criarApp({ db, producao = false, agora = () => new Date(), log = consol
     })
   );
 
-  app.use((req, res) => res.status(404).sendFile(path.join(PASTA_PUBLICA, "404.html")));
+  // Página 404: o <base href="/"> faz os caminhos relativos dela valerem em qualquer profundidade (/a/b/c).
+  const pagina404 = fs
+    .readFileSync(path.join(PASTA_PUBLICA, "404.html"), "utf8")
+    .replace("<head>", '<head>\n    <base href="/" />');
+  app.use((req, res) => res.status(404).type("html").send(pagina404));
 
   // Erros: regras de negócio viram mensagens claras; o resto vira 500 sem detalhes internos.
   // eslint-disable-next-line no-unused-vars

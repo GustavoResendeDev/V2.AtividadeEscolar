@@ -22,8 +22,50 @@ function iniciarStatusFuncionamento() {
   });
 }
 
+/* Menu do celular: o botão de três traços abre o menu em tela cheia abaixo do cabeçalho.
+   Fecha ao tocar num link, ao apertar Esc, ao tocar fora dele ou ao virar para tela larga. */
+function iniciarMenuCelular() {
+  const header = document.querySelector("header");
+  const botao = header?.querySelector(".botaoMenu");
+  const menu = document.getElementById("menuPrincipal");
+  if (!botao || !menu) return;
+  const telaLarga = matchMedia("(min-width: 761px)");
+
+  function abrir() {
+    header.style.setProperty("--altura-cabecalho", `${header.offsetHeight}px`);
+    header.classList.add("menuAberto");
+    document.documentElement.classList.add("menuAberto");
+    botao.setAttribute("aria-expanded", "true");
+    botao.setAttribute("aria-label", "Fechar menu");
+  }
+
+  function fechar({ devolverFoco = false } = {}) {
+    if (!header.classList.contains("menuAberto")) return;
+    header.classList.remove("menuAberto");
+    document.documentElement.classList.remove("menuAberto");
+    botao.setAttribute("aria-expanded", "false");
+    botao.setAttribute("aria-label", "Abrir menu");
+    if (devolverFoco) botao.focus();
+  }
+
+  botao.addEventListener("click", () => (header.classList.contains("menuAberto") ? fechar() : abrir()));
+  menu.addEventListener("click", (e) => {
+    if (e.target.closest("a")) fechar();
+    else if (e.target === menu) fechar(); // toque na área vazia do painel
+  });
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") fechar({ devolverFoco: true });
+  });
+  // Ao sair do cabeçalho com o Tab, o menu fecha (não fica aberto por trás do conteúdo).
+  header.addEventListener("focusout", (e) => {
+    if (e.relatedTarget && !header.contains(e.relatedTarget)) fechar();
+  });
+  telaLarga.addEventListener("change", () => fechar());
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   iniciarStatusFuncionamento();
+  iniciarMenuCelular();
 
   const header = document.querySelector("header");
   const linksMenu = document.querySelectorAll(".menu a[href^='#']");

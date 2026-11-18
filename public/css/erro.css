@@ -1,0 +1,158 @@
+/* Página 404: só o número, com uma tesoura de barbeiro no lugar do zero. */
+
+.paginaErro {
+  --fundo-erro: #0e0e0e;
+  min-height: 100vh;
+  min-height: 100svh;
+  background:
+    radial-gradient(ellipse at 50% 50%, rgba(255, 255, 255, 0.05), transparent 55%),
+    var(--fundo-erro);
+}
+
+.erro {
+  display: grid;
+  place-items: center;
+  min-height: 100vh;
+  min-height: 100svh;
+  padding: 24px;
+}
+
+.numeroErro {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(6px, 1.6vw, 20px);
+  font-family: var(--fonte-titulo);
+  font-size: clamp(7.5rem, 30vw, 17rem);
+  font-weight: 700;
+  line-height: 1;
+  color: var(--branco);
+  text-decoration: none;
+  border-radius: var(--raio-medio);
+  user-select: none;
+  -webkit-user-select: none;
+  transition: opacity 0.25s ease;
+}
+
+.numeroErro:focus-visible {
+  outline: 2px solid var(--branco);
+  outline-offset: 12px;
+}
+
+.digito {
+  display: block;
+  line-height: 0.8;
+}
+
+/* Tesoura: mesma altura e peso visual dos dígitos */
+.tesoura {
+  display: block;
+  width: auto;
+  height: 0.82em;
+  overflow: visible;
+}
+
+.tesoura .metade {
+  fill: var(--branco);
+}
+
+/* Contorno da cor do fundo: abre um vão entre as duas lâminas no cruzamento */
+.tesoura .recorte {
+  fill: var(--fundo-erro);
+  stroke: var(--fundo-erro);
+  stroke-width: 6;
+  stroke-linejoin: round;
+}
+
+/* Linha do fio da lâmina: detalhe sutil que dá acabamento de metal */
+.tesoura .fio {
+  fill: none;
+  stroke: var(--fundo-erro);
+  stroke-width: 1.4;
+  stroke-linecap: round;
+  opacity: 0.28;
+}
+
+.tesoura .parafuso {
+  fill: var(--branco);
+  stroke: var(--fundo-erro);
+  stroke-width: 2.5;
+}
+
+.tesoura .fendaParafuso {
+  stroke: var(--fundo-erro);
+  stroke-width: 1.8;
+  stroke-linecap: round;
+}
+
+@media (hover: hover) {
+  .numeroErro:hover {
+    opacity: 0.85;
+  }
+}
+
+/* Ao abrir a página, a tesoura fecha e abre uma vez (um "corte") */
+@media (prefers-reduced-motion: no-preference) {
+  .numeroErro {
+    animation: surgirErro 0.7s var(--ease-saida) both;
+  }
+
+  .tesoura .metade,
+  .tesoura .recorte {
+    transform-box: view-box;
+    transform-origin: 60px 71px;
+  }
+
+  .tesoura > g.metade {
+    animation: corteTras 0.9s var(--ease-saida) 0.35s both;
+  }
+
+  .tesoura > use {
+    animation: corteFrente 0.9s var(--ease-saida) 0.35s both;
+  }
+
+  @keyframes surgirErro {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+  }
+
+  /* A metade de trás é o espelho da da frente. Com a origem no eixo (60, 75), o espelho é só
+     scale(-1, 1); o giro vem antes dele, então ela gira para o lado oposto e a tesoura fecha. */
+  @keyframes corteTras {
+    0%,
+    100% {
+      transform: scale(-1, 1) rotate(0);
+    }
+    40% {
+      transform: scale(-1, 1) rotate(9deg);
+    }
+  }
+
+  @keyframes corteFrente {
+    0%,
+    100% {
+      transform: rotate(0);
+    }
+    40% {
+      transform: rotate(9deg);
+    }
+  }
+}
+
+@media (forced-colors: active) {
+  .numeroErro {
+    color: CanvasText;
+  }
+  .tesoura .metade,
+  .tesoura .parafuso {
+    fill: CanvasText;
+  }
+  .tesoura .recorte,
+  .tesoura .fio,
+  .tesoura .fendaParafuso {
+    stroke: Canvas;
+    fill: Canvas;
+  }
+}

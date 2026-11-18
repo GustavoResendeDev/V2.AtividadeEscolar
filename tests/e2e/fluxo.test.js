@@ -50,35 +50,51 @@ test("cliente agenda e o barbeiro confirma no painel", { skip: !playwright && "P
   pagina.on("pageerror", (e) => erros.push(e.message));
   pagina.on("console", (m) => m.type() === "error" && erros.push(m.text()));
 
-  // 1. Cliente: formulário de agendamento
+  // Espera os horários livres serem recalculados para o tempo total dos serviços.
+  const esperarHorarios = (duracao) =>
+    pagina.waitForFunction(
+      (texto) => {
+        const caixa = document.querySelector("#opcoesHora");
+        return caixa.dataset.estado === "pronto" && document.querySelector("#dicaHora").textContent.includes(texto);
+      },
+      `para ${duracao} de serviço`
+    );
+
+  // 1. Cliente: nome, WhatsApp, data, horário, serviços (dois) e barbeiro
   await pagina.goto(`${base}/agendamento.html`);
-  await pagina.selectOption("#servico", { label: "Corte Masculino · 1h · R$ 40,00" });
-  await pagina.locator(".opcaoBarbeiro", { hasText: "Caio Henrique" }).click();
-  await pagina.fill("#data", DATA);
-  await pagina.dispatchEvent("#data", "change");
-  await pagina.waitForFunction(() => !document.querySelector("#hora").disabled);
-  await pagina.selectOption("#hora", "15:00");
   await pagina.fill("#nome", "Lucas Ferreira");
   await pagina.fill("#telefone", "62987654321");
   assert.equal(await pagina.inputValue("#telefone"), "(62) 98765-4321", "máscara do telefone");
+  await pagina.fill("#data", DATA);
+  await pagina.dispatchEvent("#data", "change");
+  await pagina.waitForSelector(".opcaoHora");
+  await pagina.locator(".opcaoServico", { hasText: "Corte Masculino" }).click();
+  await pagina.locator(".opcaoServico", { hasText: "Barba Tradicional" }).click();
+  assert.equal(await pagina.isChecked(".qualquerBarbeiro input"), true, "sem preferência vem marcado");
+  await pagina.locator(".opcaoBarbeiro", { hasText: "Caio Henrique" }).click();
+  await esperarHorarios("1h30");
+  await pagina.locator(".opcaoHora", { hasText: "15:00" }).click();
+  assert.match(await pagina.textContent("#resTotal"), /75,00/, "resumo soma os serviços");
   await pagina.locator(".consentimento").click();
   await pagina.click(".botaoEnviar");
 
   await pagina.waitForSelector("#confirmacao:not([hidden])");
   const resumo = await pagina.textContent(".resumo");
   assert.match(resumo, /Caio Henrique/);
-  assert.match(resumo, /15:00 às 16:00/);
+  assert.match(resumo, /15:00 às 16:30/);
+  assert.match(resumo, /Corte Masculino, Barba Tradicional/);
   assert.match(await pagina.getAttribute("#abrirWhatsapp", "href"), /^https:\/\/wa\.me\/5562993548184\?text=/);
 
   // 2. O mesmo horário não aparece mais como livre
   await pagina.click("#novoAgendamento");
-  await pagina.selectOption("#servico", { label: "Corte Masculino · 1h · R$ 40,00" });
-  await pagina.locator(".opcaoBarbeiro", { hasText: "Caio Henrique" }).click();
   await pagina.fill("#data", DATA);
   await pagina.dispatchEvent("#data", "change");
-  await pagina.waitForFunction(() => !document.querySelector("#hora").disabled);
-  const horas = await pagina.$$eval("#hora option", (os) => os.map((o) => o.value));
-  assert.ok(!horas.includes("15:00"), "15:00 deveria estar ocupado");
+  await pagina.locator(".opcaoServico", { hasText: "Corte Masculino" }).click();
+  await pagina.locator(".opcaoBarbeiro", { hasText: "Caio Henrique" }).click();
+  await esperarHorarios("1h");
+  const horas = await pagina.$$eval("input[name='hora']", (os) => os.map((o) => o.value));
+  assert.ok(!horas.includes("15:00") && !horas.includes("16:00"), "15:00 a 16:30 deveriam estar ocupados");
+  assert.ok(horas.includes("16:30"));
 
   // 3. Barbeiro: login com senha errada e depois certa
   await pagina.goto(`${base}/admin/`);

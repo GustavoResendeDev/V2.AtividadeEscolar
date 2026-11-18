@@ -3,22 +3,54 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#0a0a0a" />
+    <meta name="theme-color" content="#0e0e0e" />
     <meta name="robots" content="noindex" />
     <title>Página não encontrada | Nova Era Barbearia</title>
-    <link rel="icon" type="image/png" sizes="64x64" href="/image/favicon-64.png" />
-    <link rel="stylesheet" href="/css/fontes.css" />
-    <link rel="stylesheet" href="/css/style.css" />
-    <link rel="stylesheet" href="/css/painel.css" />
+    <!-- Caminhos relativos: funcionam abrindo o arquivo direto. No servidor, o app.js acrescenta
+         <base href="/"> para eles continuarem certos em qualquer endereço que não existe. -->
+    <link rel="icon" type="image/png" sizes="64x64" href="image/favicon-64.png" />
+    <link rel="preload" href="fonts/oswald-latin.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="stylesheet" href="css/fontes.css" />
+    <link rel="stylesheet" href="css/style.css" />
+    <link rel="stylesheet" href="css/erro.css" />
   </head>
-  <body class="paginaLogin">
-    <main class="login">
-      <div class="cartaoLogin">
-        <p class="minititulo">Erro 404</p>
-        <h1 class="tituloLogin">Página não encontrada</h1>
-        <p class="textoLogin">O endereço pode ter mudado ou não existe mais.</p>
-        <a class="botao" href="/">Voltar ao início</a>
-      </div>
+  <body class="paginaErro">
+    <main class="erro">
+      <h1 class="somenteLeitor">Página não encontrada (erro 404)</h1>
+
+      <!-- O 404 inteiro leva de volta ao início -->
+      <a class="numeroErro" href="index.html" aria-label="Voltar ao início do site">
+        <span class="digito" aria-hidden="true">4</span>
+
+        <svg class="tesoura" viewBox="14 0 92 150" aria-hidden="true" focusable="false">
+          <defs>
+            <!-- Metade da tesoura: lâmina, haste e argola. A outra metade é o espelho desta. -->
+            <g id="metadeTesoura">
+              <path d="M40 2 C48 24 60 50 68 72 L82 110 L66 116 L54 78 C46 56 36 26 40 2 Z" />
+              <path
+                fill-rule="evenodd"
+                d="M62 128 a20 20 0 1 0 40 0 a20 20 0 1 0 -40 0 Z M70.5 128 a11.5 11.5 0 1 0 23 0 a11.5 11.5 0 1 0 -23 0 Z"
+              />
+              <path class="fio" d="M43 12 C49 30 56 48 62 64" />
+            </g>
+          </defs>
+
+          <!-- Metade de trás (espelho da da frente) -->
+          <g class="metade" transform="translate(120 0) scale(-1 1)">
+            <use href="#metadeTesoura" />
+          </g>
+
+          <!-- Metade da frente: o contorno escuro separa as lâminas onde elas se cruzam -->
+          <use class="recorte" href="#metadeTesoura" />
+          <use class="metade" href="#metadeTesoura" />
+
+          <!-- Parafuso do eixo -->
+          <circle class="parafuso" cx="60" cy="71" r="7" />
+          <path class="fendaParafuso" d="M56.2 73.6 63.8 68.4" />
+        </svg>
+
+        <span class="digito" aria-hidden="true">4</span>
+      </a>
     </main>
   </body>
 </html>

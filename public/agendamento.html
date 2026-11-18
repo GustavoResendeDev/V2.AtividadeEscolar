@@ -30,152 +30,192 @@
           height="256"
         />
       </a>
-      <nav class="menu">
+      <nav class="menu" id="menuPrincipal" aria-label="Menu principal">
         <ul>
           <li><a href="index.html#sobre">Sobre Nós</a></li>
           <li><a href="index.html#servicos">Serviços</a></li>
           <li><a href="index.html#local">Localização</a></li>
         </ul>
+        <div class="rodapeMenu">
+          <p>Segunda a sábado, das 8h às 19h</p>
+          <a href="https://wa.me/5562993548184" target="_blank" rel="noopener noreferrer">WhatsApp (62) 99354-8184</a>
+        </div>
       </nav>
-      <a href="agendamento.html" class="botao botaoHeader" aria-current="page">Agendar Agora</a>
+      <a href="agendamento.html" class="botao botaoHeader" aria-current="page">Agendar <span class="textoLongo">Agora</span></a>
+      <button type="button" class="botaoMenu" aria-controls="menuPrincipal" aria-expanded="false" aria-label="Abrir menu">
+        <span class="iconeMenu" aria-hidden="true"><span></span><span></span><span></span></span>
+      </button>
     </header>
 
     <main class="agendamento">
-      <div class="agendamentoInfo">
+      <div class="cabecalhoAgendamento">
         <p class="minititulo">Reserve seu horário</p>
         <h1 class="agendamentoTitulo">Agendamento</h1>
-        <p class="agendamentoTexto">
-          Escolha o serviço, o barbeiro, o dia e um dos horários livres. A reserva
-          fica registrada na hora e a mensagem chega pronta no WhatsApp da barbearia.
-        </p>
-        <ol class="passosAgendamento">
-          <li><span>1</span> Escolha serviço e barbeiro</li>
-          <li><span>2</span> Veja os horários livres</li>
-          <li><span>3</span> Receba a confirmação no WhatsApp</li>
-        </ol>
-        <dl class="agendamentoDetalhes">
-          <div>
-            <dt>Funcionamento</dt>
-            <dd>Segunda a sábado, das 8h às 19h</dd>
-          </div>
-          <div>
-            <dt>WhatsApp</dt>
-            <dd><a href="https://wa.me/5562993548184" target="_blank" rel="noopener noreferrer">(62) 99354-8184</a></dd>
-          </div>
-          <div>
-            <dt>Endereço</dt>
-            <dd>R. José Gomes Bailão, nº 579 – Cidade Jardim, Goiânia – GO</dd>
-          </div>
-        </dl>
+        <ul class="infoAgendamento">
+          <li>Segunda a sábado, 8h às 19h</li>
+          <li>R. José Gomes Bailão, 579 · Cidade Jardim, Goiânia</li>
+          <li>
+            <a href="https://wa.me/5562993548184" target="_blank" rel="noopener noreferrer">WhatsApp (62) 99354-8184</a>
+          </li>
+        </ul>
       </div>
 
-      <div class="painelAgendamento">
-        <noscript>
-          <p class="avisoSistema">
-            O agendamento online precisa de JavaScript. Você também pode agendar direto pelo
-            <a href="https://wa.me/5562993548184">WhatsApp (62) 99354-8184</a>.
-          </p>
-        </noscript>
+      <div class="gradeAgendamento">
+        <div class="painelAgendamento">
+          <noscript>
+            <p class="avisoSistema">
+              O agendamento online precisa de JavaScript. Você também pode agendar direto pelo
+              <a href="https://wa.me/5562993548184">WhatsApp (62) 99354-8184</a>.
+            </p>
+          </noscript>
 
-        <p class="avisoSistema" id="avisoSistema" role="alert" hidden></p>
+          <p class="avisoSistema" id="avisoSistema" role="alert" hidden></p>
 
-        <form id="formAgendamento" class="formAgendamento" novalidate aria-busy="true">
-          <div class="campo">
-            <label for="servico">Serviço</label>
-            <select id="servico" name="servico" required disabled>
-              <option value="" disabled selected>Carregando serviços…</option>
-            </select>
-            <span class="erroCampo" aria-live="polite"></span>
-          </div>
+          <form id="formAgendamento" class="formAgendamento" novalidate aria-busy="true">
+            <!-- 1. Nome -->
+            <section class="etapa" aria-labelledby="tituloEtapaNome">
+              <h2 class="tituloEtapa" id="tituloEtapaNome"><span class="numeroEtapa">1</span> Seus dados</h2>
+              <div class="linhaCampos">
+                <div class="campo">
+                  <label for="nome">Nome completo</label>
+                  <input
+                    type="text"
+                    id="nome"
+                    name="nome"
+                    autocomplete="name"
+                    placeholder="Seu nome e sobrenome"
+                    minlength="3"
+                    maxlength="80"
+                    required
+                  />
+                  <span class="erroCampo" aria-live="polite"></span>
+                </div>
 
-          <fieldset class="campo campoBarbeiro">
-            <legend>Barbeiro</legend>
-            <div class="opcoesBarbeiro" id="opcoesBarbeiro"></div>
-            <span class="erroCampo" aria-live="polite"></span>
-          </fieldset>
+                <!-- 2. WhatsApp -->
+                <div class="campo">
+                  <label for="telefone">WhatsApp</label>
+                  <input
+                    type="tel"
+                    id="telefone"
+                    name="telefone"
+                    autocomplete="tel-national"
+                    inputmode="tel"
+                    placeholder="(62) 99999-9999"
+                    maxlength="16"
+                    required
+                  />
+                  <span class="erroCampo" aria-live="polite"></span>
+                </div>
+              </div>
+            </section>
 
-          <div class="linhaCampos">
-            <div class="campo">
-              <label for="data">Data</label>
-              <input type="date" id="data" name="data" required />
-              <span class="erroCampo" aria-live="polite"></span>
+            <!-- 3. Data e 4. Horário -->
+            <section class="etapa" aria-labelledby="tituloEtapaQuando">
+              <h2 class="tituloEtapa" id="tituloEtapaQuando"><span class="numeroEtapa">2</span> Data e horário</h2>
+
+              <div class="campo">
+                <label for="data">Data</label>
+                <div class="atalhosData" id="atalhosData" role="group" aria-label="Próximos dias abertos"></div>
+                <input type="date" id="data" name="data" required aria-describedby="dicaData" />
+                <span class="dicaCampo" id="dicaData">Toque num dos próximos dias ou escolha outra data.</span>
+                <span class="erroCampo" aria-live="polite"></span>
+              </div>
+
+              <fieldset class="campo campoHora" id="campoHora">
+                <legend>Horário</legend>
+                <div class="opcoesHora" id="opcoesHora" role="radiogroup" aria-describedby="dicaHora"></div>
+                <span class="dicaCampo" id="dicaHora" aria-live="polite">Escolha a data para ver os horários livres.</span>
+                <span class="erroCampo" aria-live="polite"></span>
+              </fieldset>
+            </section>
+
+            <!-- 5. Serviços -->
+            <section class="etapa" aria-labelledby="tituloEtapaServicos">
+              <h2 class="tituloEtapa" id="tituloEtapaServicos"><span class="numeroEtapa">3</span> Serviços</h2>
+              <fieldset class="campo campoServicos" id="campoServicos">
+                <legend>Escolha um ou mais serviços</legend>
+                <div class="opcoesServico" id="opcoesServico">
+                  <p class="carregando">Carregando serviços…</p>
+                </div>
+                <span class="dicaCampo" id="dicaServicos" aria-live="polite"></span>
+                <span class="erroCampo" aria-live="polite"></span>
+              </fieldset>
+            </section>
+
+            <!-- 6. Barbeiro -->
+            <section class="etapa" aria-labelledby="tituloEtapaBarbeiro">
+              <h2 class="tituloEtapa" id="tituloEtapaBarbeiro"><span class="numeroEtapa">4</span> Barbeiro</h2>
+              <fieldset class="campo campoBarbeiro">
+                <legend>Com quem você prefere?</legend>
+                <div class="opcoesBarbeiro" id="opcoesBarbeiro"></div>
+                <span class="erroCampo" aria-live="polite"></span>
+              </fieldset>
+            </section>
+
+            <div class="etapa etapaFinal">
+              <div class="campo campoConsentimento">
+                <label class="consentimento">
+                  <input type="checkbox" id="consentimento" name="consentimento" required />
+                  <span>
+                    Li e concordo com a
+                    <a href="privacidade.html" target="_blank" rel="noopener">Política de Privacidade</a>.
+                    Meus dados serão usados apenas para este agendamento.
+                  </span>
+                </label>
+                <span class="erroCampo" aria-live="polite"></span>
+              </div>
+
+              <button type="submit" class="botao botaoEnviar">Confirmar agendamento</button>
+              <p class="avisoEnvio">
+                O horário fica reservado assim que você confirmar. Depois, é só enviar o resumo pelo WhatsApp da barbearia.
+              </p>
             </div>
+          </form>
 
-            <div class="campo">
-              <label for="hora">Horário</label>
-              <select id="hora" name="hora" required disabled aria-describedby="dicaHora">
-                <option value="" disabled selected>Escolha serviço e data</option>
-              </select>
-              <span class="dicaCampo" id="dicaHora" aria-live="polite"></span>
-              <span class="erroCampo" aria-live="polite"></span>
+          <div class="confirmacao" id="confirmacao" hidden tabindex="-1">
+            <p class="selo">Reserva registrada</p>
+            <h2>Horário reservado</h2>
+            <p class="confirmacaoTexto"></p>
+            <dl class="resumo"></dl>
+            <div class="confirmacaoBotoes">
+              <a class="botao" id="abrirWhatsapp" href="https://wa.me/5562993548184" target="_blank" rel="noopener noreferrer">
+                Enviar no WhatsApp
+              </a>
+              <button type="button" class="botao botaoContorno" id="novoAgendamento">Novo agendamento</button>
             </div>
-          </div>
-
-          <div class="linhaCampos">
-            <div class="campo">
-              <label for="nome">Nome completo</label>
-              <input
-                type="text"
-                id="nome"
-                name="nome"
-                autocomplete="name"
-                placeholder="Seu nome"
-                minlength="3"
-                maxlength="80"
-                required
-              />
-              <span class="erroCampo" aria-live="polite"></span>
-            </div>
-
-            <div class="campo">
-              <label for="telefone">WhatsApp</label>
-              <input
-                type="tel"
-                id="telefone"
-                name="telefone"
-                autocomplete="tel-national"
-                inputmode="tel"
-                placeholder="(62) 99999-9999"
-                maxlength="16"
-                required
-              />
-              <span class="erroCampo" aria-live="polite"></span>
-            </div>
-          </div>
-
-          <div class="campo campoConsentimento">
-            <label class="consentimento">
-              <input type="checkbox" id="consentimento" name="consentimento" required />
-              <span>
-                Li e concordo com a
-                <a href="privacidade.html" target="_blank" rel="noopener">Política de Privacidade</a>.
-                Meus dados serão usados apenas para este agendamento.
-              </span>
-            </label>
-            <span class="erroCampo" aria-live="polite"></span>
-          </div>
-
-          <button type="submit" class="botao botaoEnviar">Confirmar agendamento</button>
-          <p class="avisoEnvio">
-            O horário fica reservado assim que você confirmar. Depois, é só enviar o
-            resumo pelo WhatsApp da barbearia.
-          </p>
-        </form>
-
-        <div class="confirmacao" id="confirmacao" hidden tabindex="-1">
-          <p class="selo">Reserva registrada</p>
-          <h2>Horário reservado</h2>
-          <p class="confirmacaoTexto"></p>
-          <dl class="resumo"></dl>
-          <div class="confirmacaoBotoes">
-            <a class="botao" id="abrirWhatsapp" href="https://wa.me/5562993548184" target="_blank" rel="noopener noreferrer">
-              Enviar no WhatsApp
-            </a>
-            <button type="button" class="botao botaoContorno" id="novoAgendamento">
-              Novo agendamento
-            </button>
           </div>
         </div>
+
+        <!-- Resumo que acompanha as escolhas -->
+        <aside class="resumoLateral" id="resumoLateral" aria-labelledby="tituloResumoLateral">
+          <h2 class="tituloResumo" id="tituloResumoLateral">Seu agendamento</h2>
+          <dl class="itensResumo">
+            <div>
+              <dt>Cliente</dt>
+              <dd id="resNome" class="vazioResumo">—</dd>
+            </div>
+            <div>
+              <dt>Quando</dt>
+              <dd id="resQuando" class="vazioResumo">—</dd>
+            </div>
+            <div>
+              <dt>Barbeiro</dt>
+              <dd id="resBarbeiro">Quem estiver disponível</dd>
+            </div>
+            <div class="itemServicos">
+              <dt>Serviços</dt>
+              <dd>
+                <ul class="listaResumoServicos" id="resServicos">
+                  <li class="vazioResumo">Nenhum serviço escolhido</li>
+                </ul>
+              </dd>
+            </div>
+          </dl>
+          <div class="totalResumo">
+            <span>Total <small id="resDuracao"></small></span>
+            <strong id="resTotal">R$ 0,00</strong>
+          </div>
+        </aside>
       </div>
     </main>
 

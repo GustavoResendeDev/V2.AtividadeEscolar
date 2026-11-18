@@ -34,14 +34,21 @@
           height="256"
         />
       </a>
-      <nav class="menu">
+      <nav class="menu" id="menuPrincipal" aria-label="Menu principal">
         <ul>
           <li><a href="#sobre">Sobre Nós</a></li>
           <li><a href="#servicos">Serviços</a></li>
           <li><a href="#local">Localização</a></li>
         </ul>
+        <div class="rodapeMenu">
+          <p>Segunda a sábado, das 8h às 19h</p>
+          <a href="https://wa.me/5562993548184" target="_blank" rel="noopener noreferrer">WhatsApp (62) 99354-8184</a>
+        </div>
       </nav>
-      <a href="agendamento.html" class="botao botaoHeader">Agendar Agora</a>
+      <a href="agendamento.html" class="botao botaoHeader">Agendar <span class="textoLongo">Agora</span></a>
+      <button type="button" class="botaoMenu" aria-controls="menuPrincipal" aria-expanded="false" aria-label="Abrir menu">
+        <span class="iconeMenu" aria-hidden="true"><span></span><span></span><span></span></span>
+      </button>
     </header>
 
     <main>

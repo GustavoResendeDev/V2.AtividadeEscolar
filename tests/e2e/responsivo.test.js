@@ -1,4 +1,4 @@
-/* Responsividade: as 5 telas, em celulares, tablets e desktops, não podem ter rolagem lateral,
+/* Responsividade: as 6 telas (incluindo a página 404), em celulares, tablets e desktops, não podem ter rolagem lateral,
    e os botões e campos principais precisam ter área de toque de pelo menos 44px no celular. */
 const { test, before, after } = require("node:test");
 const assert = require("node:assert/strict");
@@ -26,7 +26,7 @@ const APARELHOS = [
   { nome: "Full HD", largura: 1920, altura: 1080 },
 ];
 
-const PAGINAS = ["/", "/agendamento.html", "/privacidade.html", "/admin/", "/admin/painel.html"];
+const PAGINAS = ["/", "/agendamento.html", "/privacidade.html", "/admin/", "/admin/painel.html", "/pagina-que-nao-existe"];
 
 let servidor, base, navegador, db, cookieSessao;
 
@@ -96,7 +96,40 @@ test("alvos de toque de pelo menos 44px no celular", { skip: !playwright && "Pla
     assert.deepEqual(pequenos, [], `${caminho} ${seletor}`);
   };
   await verificar("/", "header .menu a, .botao, .ponto, .rodapeLinks a");
-  await verificar("/agendamento.html", ".campo input:not([type=checkbox]):not([type=radio]), .campo select, .opcaoBarbeiro, .botao");
+  await verificar(
+    "/agendamento.html",
+    ".campo input:not([type=checkbox]):not([type=radio]), .campo select, .atalhoData, .opcaoServico, .opcaoBarbeiro, .botao"
+  );
   await verificar("/admin/painel.html", ".botao, .entradaPainel, .filtrosPainel select");
+  await verificar("/pagina-que-nao-existe", ".numeroErro");
+  await contexto.close();
+});
+
+test("menu do celular: abre no botão, ocupa uma linha só e fecha ao escolher um item", { skip: !playwright && "Playwright não instalado" }, async () => {
+  const contexto = await navegador.newContext({ viewport: { width: 375, height: 667 }, isMobile: true, hasTouch: true });
+  const pagina = await contexto.newPage();
+  await pagina.goto(base + "/");
+  await pagina.waitForLoadState("networkidle");
+
+  // Logo, Agendar e botão de menu na mesma linha; os links começam escondidos.
+  const altura = await pagina.evaluate(() => document.querySelector("header").getBoundingClientRect().height);
+  assert.ok(altura < 90, `cabeçalho com ${altura}px: deveria ter uma linha só`);
+  assert.equal(await pagina.isVisible("#menuPrincipal a[href='#servicos']"), false);
+
+  await pagina.click(".botaoMenu");
+  assert.equal(await pagina.getAttribute(".botaoMenu", "aria-expanded"), "true");
+  const link = pagina.locator("#menuPrincipal a[href='#servicos']");
+  await link.waitFor({ state: "visible" });
+  assert.ok((await link.boundingBox()).height >= 44, "item do menu com área de toque de 44px");
+
+  await link.click();
+  assert.equal(await pagina.getAttribute(".botaoMenu", "aria-expanded"), "false");
+  await pagina.waitForFunction(() => window.scrollY > 300);
+
+  // Esc também fecha e devolve o foco ao botão.
+  await pagina.click(".botaoMenu");
+  await pagina.keyboard.press("Escape");
+  assert.equal(await pagina.getAttribute(".botaoMenu", "aria-expanded"), "false");
+  assert.equal(await pagina.evaluate(() => document.activeElement.classList.contains("botaoMenu")), true);
   await contexto.close();
 });

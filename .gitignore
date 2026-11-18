@@ -7,3 +7,5 @@ backups/
 *.db-shm
 .env
 test-results/
+.DS_Store
+.vscode/

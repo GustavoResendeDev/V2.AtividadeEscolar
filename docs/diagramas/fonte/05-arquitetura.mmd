@@ -1,0 +1,29 @@
+flowchart TB
+  subgraph CL["APRESENTAÇÃO"]
+    TELAS["5 telas responsivas<br/>Início · Agendamento · Privacidade · Login · Painel<br/>HTML5 · CSS3 · JavaScript"]
+    RJ["regras.js<br/>funcionamento, feriados, fuso"]:::comp
+  end
+  subgraph SV["APLICAÇÃO (Node.js)"]
+    SEG["Segurança<br/>CSP · cabeçalhos · só JSON"]
+    ROT["API REST<br/>app.js"]
+    AUT["Autenticação<br/>auth.js · scrypt · sessões"]
+    AG["Regras de negócio<br/>agenda.js"]
+    MAN["Manutenção diária<br/>anonimização LGPD"]
+  end
+  subgraph DB["DADOS"]
+    SQL[("SQLite<br/>novaera.db")]
+    BK[("Backups")]
+  end
+  WA["WhatsApp<br/>wa.me"]:::ext
+  TELAS -- "HTTPS · JSON" --> SEG
+  SEG --> ROT
+  ROT --> AUT
+  ROT --> AG
+  MAN --> AG
+  AUT --> SQL
+  AG --> SQL
+  SQL -. "npm run backup" .-> BK
+  TELAS -. "resumo do agendamento" .-> WA
+  RJ -. "mesmo arquivo" .-> AG
+  classDef comp fill:#e4e4e7,stroke:#18181b
+  classDef ext fill:#dcfce7,stroke:#15803d

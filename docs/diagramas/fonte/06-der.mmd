@@ -1,0 +1,62 @@
+erDiagram
+  CLIENTES ||--o{ AGENDAMENTOS : "faz"
+  SERVICOS ||--o{ AGENDAMENTOS : "é prestado em"
+  BARBEIROS ||--o{ AGENDAMENTOS : "atende"
+  BARBEIROS |o--o| USUARIOS : "tem login"
+  USUARIOS ||--o{ SESSOES : "abre"
+  AGENDAMENTOS ||--|{ HISTORICO_STATUS : "registra"
+  USUARIOS |o--o{ HISTORICO_STATUS : "altera"
+  CLIENTES {
+    int id PK
+    text nome
+    text telefone UK "anonimizado após 180 dias"
+    text criado_em
+  }
+  SERVICOS {
+    int id PK
+    text nome UK
+    text categoria
+    int duracao_min
+    int preco_centavos
+    int ativo
+  }
+  BARBEIROS {
+    int id PK
+    text nome UK
+    text especialidade
+    int ativo
+  }
+  AGENDAMENTOS {
+    int id PK
+    text codigo UK
+    int cliente_id FK
+    int servico_id FK
+    int barbeiro_id FK
+    text data
+    int inicio_min
+    int fim_min
+    int preco_centavos
+    text status
+    text consentimento_em
+  }
+  USUARIOS {
+    int id PK
+    text nome
+    text email UK
+    text senha_hash "scrypt"
+    text papel "admin ou barbeiro"
+    int barbeiro_id FK
+  }
+  SESSOES {
+    text token_hash PK "SHA-256"
+    int usuario_id FK
+    int expira_em
+  }
+  HISTORICO_STATUS {
+    int id PK
+    int agendamento_id FK
+    text de
+    text para
+    int usuario_id FK
+    text em
+  }

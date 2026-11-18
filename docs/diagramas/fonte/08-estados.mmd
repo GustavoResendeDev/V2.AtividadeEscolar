@@ -1,0 +1,14 @@
+stateDiagram-v2
+  direction TB
+  state "concluído" as concluido
+  state "pendente (a confirmar)" as pendente
+  [*] --> pendente: cliente agenda pelo site
+  pendente --> confirmado: barbeiro confirma
+  pendente --> cancelado: cancela
+  confirmado --> concluido: atendimento feito
+  confirmado --> faltou: cliente não veio
+  confirmado --> cancelado: cancela
+  concluido --> [*]
+  faltou --> [*]
+  cancelado --> [*]
+  note right of cancelado: libera o horário na agenda

@@ -1,0 +1,25 @@
+gantt
+  dateFormat YYYY-MM-DD
+  axisFormat %d/%m
+  todayMarker off
+  excludes sunday
+  section 1 Requisitos
+    Levantamento e entrevistas        :done, r1, 2026-10-19, 4d
+    Especificação de requisitos       :done, r2, after r1, 3d
+  section 2 Planejamento
+    Escopo, EAP e cronograma          :done, p1, 2026-10-26, 3d
+    Casos de uso e riscos             :done, p2, after p1, 3d
+  section 3 Arquitetura e design
+    Arquitetura e banco de dados      :done, a1, 2026-11-03, 3d
+    Identidade visual e protótipo     :done, a2, 2026-11-03, 5d
+  section 4 Desenvolvimento
+    Site institucional (V2)           :done, d1, 2026-10-21, 3d
+    Redesign e otimização             :done, d2, 2026-11-09, 4d
+    API, banco e painel               :done, d3, 2026-11-13, 5d
+  section 5 Testes
+    Testes automatizados e QA         :done, t1, 2026-11-16, 4d
+  section 6 Implantação
+    Deploy, manual e treinamento      :active, i1, 2026-11-19, 5d
+  section Marcos
+    Entrega da documentação           :milestone, m1, 2026-11-18, 0d
+    Apresentação do sistema           :milestone, m2, 2026-11-25, 0d

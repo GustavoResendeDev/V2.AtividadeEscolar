@@ -1,0 +1,17 @@
+flowchart LR
+  P["Sistema de Agendamento<br/>Nova Era Barbearia"]:::raiz
+  P --> G["1 Gerência"]
+  P --> R["2 Requisitos"]
+  P --> A["3 Arquitetura e design"]
+  P --> D["4 Desenvolvimento"]
+  P --> T["5 Testes e qualidade"]
+  P --> I["6 Implantação e treinamento"]
+  P --> M["7 Manutenção"]
+  G --> G1["1.1 Termo de abertura<br/>1.2 Cronograma<br/>1.3 Riscos<br/>1.4 Reuniões e status"]
+  R --> R1["2.1 Levantamento<br/>2.2 Requisitos funcionais<br/>2.3 Não funcionais<br/>2.4 Regras de negócio"]
+  A --> A1["3.1 Arquitetura<br/>3.2 Banco de dados<br/>3.3 Identidade visual<br/>3.4 Protótipo das telas"]
+  D --> D1["4.1 Front-end<br/>4.2 API REST<br/>4.3 Banco SQLite<br/>4.4 Painel da equipe"]
+  T --> T1["5.1 Unitários<br/>5.2 API<br/>5.3 Ponta a ponta<br/>5.4 Responsividade"]
+  I --> I1["6.1 Hospedagem<br/>6.2 Usuários iniciais<br/>6.3 Manual<br/>6.4 Treinamento"]
+  M --> M1["7.1 Backups<br/>7.2 LGPD<br/>7.3 Evolução"]
+  classDef raiz fill:#18181b,color:#fff,stroke:#18181b

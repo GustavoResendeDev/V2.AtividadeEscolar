@@ -1,0 +1,18 @@
+flowchart TB
+  I["1 · Início<br/>sobre · serviços · localização"]
+  A["2 · Agendamento<br/>formulário + confirmação"]
+  P["3 · Privacidade<br/>LGPD"]
+  L["4 · Login<br/>área da equipe"]
+  K["5 · Painel<br/>agenda do dia"]
+  W["WhatsApp"]:::ext
+  M["Google Maps / Waze"]:::ext
+  I -- "Agendar agora" --> A
+  I -- "Agendar pelo WhatsApp" --> W
+  I -- "rota" --> M
+  A -- "Enviar no WhatsApp" --> W
+  A -- "link no formulário" --> P
+  I & A & P -- "rodapé: Área da equipe" --> L
+  L -- "login válido" --> K
+  K -- "Sair" --> L
+  K -- "contato com cliente" --> W
+  classDef ext fill:#dcfce7,stroke:#15803d

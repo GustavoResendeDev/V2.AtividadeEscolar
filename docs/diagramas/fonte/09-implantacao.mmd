@@ -1,0 +1,18 @@
+flowchart LR
+  subgraph U["Dispositivos dos usuários"]
+    CEL["Celular"]
+    TAB["Tablet"]
+    PC["Computador"]
+  end
+  subgraph GH["GitHub"]
+    REP["Repositório<br/>V2.AtividadeEscolar"]
+    CI["GitHub Actions<br/>51 testes automáticos"]
+  end
+  subgraph RD["Render (nuvem)"]
+    WEB["Serviço web<br/>Node.js 22 · npm start<br/>HTTPS automático"]
+    DSK[("Disco persistente<br/>/var/data/novaera.db<br/>/var/data/backups")]
+  end
+  CEL & TAB & PC -- "HTTPS" --> WEB
+  REP -- "push" --> CI
+  REP -- "deploy automático" --> WEB
+  WEB --- DSK

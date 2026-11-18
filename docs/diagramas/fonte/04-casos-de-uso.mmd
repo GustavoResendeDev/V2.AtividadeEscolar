@@ -1,0 +1,35 @@
+flowchart LR
+  C(["Cliente"]):::ator
+  subgraph S["Sistema Nova Era Barbearia"]
+    direction TB
+    subgraph SC["Área pública"]
+      direction TB
+      UC1(["UC01 Consultar serviços e preços"])
+      UC2(["UC02 Ver localização e horário"])
+      UC3(["UC03 Agendar horário"])
+      UC4(["UC04 Ver horários livres"])
+      UC5(["UC05 Enviar resumo pelo WhatsApp"])
+    end
+    subgraph SE["Área da equipe"]
+      direction TB
+      UC6(["UC06 Entrar no painel"])
+      UC7(["UC07 Ver agenda e indicadores do dia"])
+      UC8(["UC08 Confirmar, concluir, registrar falta ou cancelar"])
+      UC9(["UC09 Filtrar por barbeiro"])
+      UC10(["UC10 Gerenciar usuários e backups"])
+    end
+  end
+  B(["Barbeiro"]):::ator
+  AD(["Administrador"]):::ator
+  C --- UC1
+  C --- UC2
+  C --- UC3
+  UC3 -. "«include»" .-> UC4
+  UC5 -. "«extend»" .-> UC3
+  UC6 --- B
+  UC7 --- B
+  UC8 --- B
+  UC9 --- AD
+  UC10 --- AD
+  AD == "herda de" ==> B
+  classDef ator fill:#18181b,color:#fff,stroke:#18181b

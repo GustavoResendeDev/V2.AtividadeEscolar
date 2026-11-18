@@ -1,0 +1,29 @@
+sequenceDiagram
+  autonumber
+  actor C as Cliente
+  participant N as Navegador<br/>(agendamento.js)
+  participant A as API<br/>(Express)
+  participant R as Regras<br/>(agenda.js)
+  participant D as SQLite
+  C->>N: Escolhe serviço, barbeiro e data
+  N->>A: GET /api/disponibilidade
+  A->>R: disponibilidade(data, serviço, barbeiro)
+  R->>D: SELECT agendamentos do dia
+  D-->>R: horários ocupados
+  R-->>N: lista de horários livres
+  C->>N: Escolhe horário, nome, WhatsApp e aceita a política
+  N->>N: Valida os campos
+  N->>A: POST /api/agendamentos (JSON)
+  A->>R: criarAgendamento(pedido)
+  R->>D: BEGIN IMMEDIATE
+  R->>D: confere conflito no horário
+  alt horário livre
+    R->>D: INSERT cliente, agendamento e histórico
+    R->>D: COMMIT
+    A-->>N: 201 · código + link do WhatsApp
+    N-->>C: "Horário reservado" + botão Enviar no WhatsApp
+  else alguém reservou antes
+    R->>D: ROLLBACK
+    A-->>N: 409 · "Esse horário acabou de ser reservado"
+    N->>A: atualiza os horários livres
+  end

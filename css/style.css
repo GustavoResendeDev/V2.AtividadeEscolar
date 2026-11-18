@@ -105,9 +105,11 @@ header {
   width: 100%;
   z-index: 1000;
 
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  grid-template-areas: "logo menu acao";
   align-items: center;
-  justify-content: space-between;
+  column-gap: 24px;
   padding: 18px 6%;
   color: var(--branco);
   background-color: transparent;
@@ -122,8 +124,19 @@ header {
 }
 
 header .logoLink {
+  grid-area: logo;
+  justify-self: start;
   display: block;
-  border-radius: 8px;
+  border-radius: 2px;
+}
+
+header .menu {
+  grid-area: menu;
+}
+
+header .botaoHeader {
+  grid-area: acao;
+  justify-self: end;
 }
 
 header .logoHeader {
@@ -152,10 +165,11 @@ header .menu li a {
   padding: 6px 0;
   color: rgba(255, 255, 255, 0.78);
   text-decoration: none;
-  font-size: 0.82rem;
-  font-weight: 600;
+  font-family: var(--fonte-titulo);
+  font-size: 0.95rem;
+  font-weight: 500;
   text-transform: uppercase;
-  letter-spacing: 0.16em;
+  letter-spacing: 0.08em;
   transition: color 0.3s ease;
 }
 
@@ -197,12 +211,74 @@ header.scrolled .logoHeader {
   height: 46px;
 }
 
+.botao {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 13px 26px;
+  font-family: var(--fonte-titulo);
+  font-size: 1rem;
+  font-weight: 500;
+  line-height: 1.2;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  text-decoration: none;
+  white-space: nowrap;
+  color: var(--preto-0);
+  background-color: var(--branco);
+  border: 1px solid var(--branco);
+  border-radius: 2px;
+  cursor: pointer;
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.botao:hover {
+  background-color: transparent;
+  color: var(--branco);
+}
+
+.botaoContorno {
+  color: var(--branco);
+  background-color: transparent;
+  border-color: var(--linha-forte);
+}
+
+.botaoContorno:hover {
+  color: var(--preto-0);
+  background-color: var(--branco);
+  border-color: var(--branco);
+}
+
+@media (max-width: 760px) {
+  html {
+    scroll-padding-top: 100px;
+  }
+  header {
+    grid-template-columns: auto 1fr;
+    grid-template-areas:
+      "logo acao"
+      "menu menu";
+    row-gap: 4px;
+  }
+  header .menu ul {
+    justify-content: center;
+  }
+  header .menu li a {
+    padding: 2px 0;
+    line-height: 1.3;
+  }
+}
+
 @media (max-width: 560px) {
   header {
     padding: 14px 5%;
   }
   header.scrolled {
-    padding: 8px 5%;
+    padding: 6px 5%;
   }
   header .logoHeader {
     width: 46px;
@@ -216,8 +292,8 @@ header.scrolled .logoHeader {
     gap: 16px;
   }
   header .menu li a {
-    font-size: 0.68rem;
-    letter-spacing: 0.1em;
+    font-size: 0.85rem;
+    letter-spacing: 0.06em;
   }
 }
 
@@ -327,7 +403,7 @@ header.scrolled .logoHeader {
   font-weight: 500;
   color: var(--texto);
   border: 1px solid var(--linha-forte);
-  border-radius: 999px;
+  border-radius: 2px;
   background: rgba(255, 255, 255, 0.04);
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
@@ -350,93 +426,15 @@ header.scrolled .logoHeader {
   100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
 }
 
-.botaoAgendamento {
-  display: inline-flex;
-  align-items: center;
-  gap: 12px;
-  position: relative;
-  z-index: 1;
-
-  padding: 17px 30px;
-  background-color: var(--branco);
-  color: var(--preto-0);
-  border: 1px solid var(--branco);
-  border-radius: 999px;
-  text-decoration: none;
-  font-size: 0.9rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.14em;
-  cursor: pointer;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
-  transition:
-    background-color 0.35s ease,
-    color 0.35s ease,
-    transform 0.35s var(--ease-saida),
-    box-shadow 0.35s ease;
-}
-
-.iconeSeta {
-  width: 18px;
-  height: 18px;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 2;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  transition: transform 0.35s var(--ease-saida);
-}
-
-.botaoAgendamento:hover {
-  background-color: transparent;
-  color: var(--branco);
-  transform: translateY(-3px);
-  box-shadow: 0 14px 40px rgba(255, 255, 255, 0.12);
-}
-
-.botaoAgendamento:hover .iconeSeta {
-  transform: translateX(4px);
-}
-
-.indicadorRolagem {
-  position: absolute;
-  left: 50%;
-  bottom: 32px;
-  transform: translateX(-50%);
-  display: block;
-  width: 26px;
-  height: 42px;
-  border: 1px solid rgba(255, 255, 255, 0.4);
-  border-radius: 999px;
-  opacity: 0;
-  animation: aparecer 1s ease 1.4s forwards;
-}
-
-.indicadorRolagem span {
-  position: absolute;
-  top: 8px;
-  left: 50%;
-  width: 2px;
-  height: 8px;
-  margin-left: -1px;
-  border-radius: 2px;
-  background: var(--branco);
-  animation: rolar 1.8s ease-in-out infinite;
-}
-
-@keyframes rolar {
-  0% { transform: translateY(0); opacity: 1; }
-  80% { transform: translateY(14px); opacity: 0; }
-  100% { transform: translateY(0); opacity: 0; }
-}
-
-@keyframes aparecer {
-  to { opacity: 1; }
+@media (max-width: 760px) {
+  .hero {
+    padding-top: 150px;
+  }
 }
 
 @media (max-width: 560px) {
   .hero {
-    padding: 110px 6% 110px;
+    padding: 150px 6% 90px;
   }
   .hero::before {
     background-position: 72% center;
@@ -688,7 +686,7 @@ header.scrolled .logoHeader {
   position: relative;
   z-index: 2;
   display: grid;
-  grid-template-columns: 1fr; /* 1 coluna no celular */
+  grid-template-columns: 1fr; 
   gap: 24px;
   max-width: 1160px;
   margin: 0 auto;
@@ -709,7 +707,7 @@ header.scrolled .logoHeader {
   backdrop-filter: blur(18px);
   -webkit-backdrop-filter: blur(18px);
   border: 1px solid var(--linha);
-  border-radius: 24px;
+  border-radius: 4px;
   box-shadow:
     0 30px 60px rgba(0, 0, 0, 0.45),
     inset 0 1px 0 rgba(255, 255, 255, 0.06);
@@ -774,7 +772,7 @@ header.scrolled .logoHeader {
   padding: 16px 12px;
   margin: 0 -12px;
   width: calc(100% + 24px);
-  border-radius: 12px;
+  border-radius: 2px;
   transition:
     background-color 0.3s ease,
     transform 0.3s var(--ease-saida);
@@ -868,8 +866,8 @@ header.scrolled .logoHeader {
 }
 
 #local.local {
-  --local-top: 0px; /* Se o menu for fixo, use a altura dele, por exemplo 72px. */
-  --local-percurso: 260svh; /* Maior = mais rolagem para abrir a porta. */
+  --local-top: 0px; 
+  --local-percurso: 260svh; 
   position: relative;
   display: block;
   padding: 0;
@@ -877,7 +875,6 @@ header.scrolled .logoHeader {
   color: var(--branco);
   background-color: var(--preto-0);
   isolation: isolate;
-  /* Não use overflow: hidden/auto aqui ou em um ancestral do sticky. */
 }
 
 #local *,
@@ -915,12 +912,11 @@ header.scrolled .logoHeader {
   margin: 0 auto;
   padding: clamp(20px, 3vw, 40px);
   border: 1px solid var(--linha);
-  border-radius: 28px;
+  border-radius: 4px;
   background: linear-gradient(160deg, var(--preto-3) 0%, var(--preto-1) 100%);
   box-shadow:
     0 40px 80px rgba(0, 0, 0, 0.5),
     inset 0 1px 0 rgba(255, 255, 255, 0.06);
-  /* Não desfocar o vídeo: o painel já tem fundo escuro. */
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
   color: var(--branco);
@@ -989,46 +985,8 @@ header.scrolled .logoHeader {
   gap: 12px;
 }
 
-#local .btn.vidro-btn {
-  display: flex;
+#local .mapaBotoes .botao {
   justify-content: space-between;
-  align-items: center;
-  gap: 14px;
-  padding: 15px 20px;
-  border: 1px solid var(--linha-forte);
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.04);
-  color: var(--branco);
-  font-size: 0.82rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
-  text-decoration: none;
-  transition:
-    background 0.3s ease,
-    color 0.3s ease,
-    border-color 0.3s ease;
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
-}
-
-#local .btn.vidro-btn span {
-  transition: transform 0.3s var(--ease-saida);
-}
-
-#local .btn.vidro-btn:hover {
-  background: var(--branco);
-  color: var(--preto-0);
-  border-color: var(--branco);
-}
-
-#local .btn.vidro-btn:hover span {
-  transform: translate(3px, -3px);
-}
-
-#local .btn.vidro-btn:focus-visible {
-  outline: 2px solid var(--branco);
-  outline-offset: 4px;
 }
 
 #local .localVisual {
@@ -1044,7 +1002,7 @@ header.scrolled .logoHeader {
   aspect-ratio: 1660 / 948;
   background: var(--preto-0);
   border: 1px solid var(--linha);
-  border-radius: 16px;
+  border-radius: 2px;
   overflow: hidden;
 }
 
@@ -1106,7 +1064,7 @@ header.scrolled .logoHeader {
     grid-template-columns: 1fr;
     padding: 20px;
     gap: 22px;
-    border-radius: 22px;
+    border-radius: 4px;
   }
   #local .localInfo {
     text-align: center;
@@ -1133,11 +1091,11 @@ header.scrolled .logoHeader {
   #local .mapaBotoes {
     flex-direction: row;
   }
-  #local .btn.vidro-btn {
+  #local .mapaBotoes .botao {
     flex: 1;
     justify-content: center;
-    padding: 13px 12px;
-    font-size: 0.75rem;
+    padding: 12px;
+    font-size: 0.88rem;
   }
   #local .localVisual figcaption {
     text-align: center;

@@ -182,8 +182,6 @@ document.addEventListener("DOMContentLoaded", () => {
   function update(timestamp) {
     raf = 0;
     if (!active || !ready || document.hidden) return;
-    // Um seek por vez: não interrompa a decodificação com outro pedido.
-    // O evento "seeked" retoma o trabalho quando o quadro estiver pronto.
     if (video.seeking) return;
 
     const rect = section.getBoundingClientRect();
@@ -193,7 +191,6 @@ document.addEventListener("DOMContentLoaded", () => {
       ? Math.min(timestamp - previousTimestamp, 64)
       : 1000 / FPS;
     previousTimestamp = timestamp;
-    // Interpolação independente da taxa de atualização da tela.
     const alpha = 1 - Math.exp(-dt / SUAVIZACAO_MS);
     smoothTime += (targetTime - smoothTime) * alpha;
     if (Math.abs(targetTime - smoothTime) < EPSILON) smoothTime = targetTime;
@@ -229,7 +226,6 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
     if (!video.getAttribute("src")) {
-      // Sem download do MP4 se o usuário preferir movimento reduzido.
       video.muted = true;
       video.src = video.dataset.src;
       video.load();

@@ -16,7 +16,7 @@ const agendamento = {
   preco: 75,
   cliente: { nome: "Pedro <Alves>", telefone: "(62) 98888-1111" },
   servico: { nome: "Corte Masculino, Barba Tradicional / Modelada", quantidade: 2 },
-  barbeiro: { nome: "Rafael Moura" },
+  barbeiro: { nome: "Marcio Rocha" },
 };
 
 describe("Cloudflare", () => {
@@ -79,5 +79,24 @@ describe("Login com bcrypt no banco", () => {
     const { senha_hash } = await db.um("SELECT senha_hash FROM usuarios WHERE email = 'admin@teste.com'");
     assert.match(senha_hash, /^\$2a\$10\$/);
     assert.equal(await auth.usuarioDaSessao(ok.cookie.split(";")[0]).then((u) => u.email), "admin@teste.com");
+  });
+});
+
+describe("Migração de um banco antigo", () => {
+  let db;
+  after(() => db?.fechar());
+
+  test("renomeia a equipe de exemplo, acrescenta a Sobrancelha e não duplica ao rodar de novo", async () => {
+    const { bancoLocal, lerSchema } = require("../../server/banco-local");
+    db = await bancoLocal();
+    // Simula o banco como estava na primeira publicação.
+    await db.query("DELETE FROM servicos WHERE nome = 'Sobrancelha'");
+    await db.query(`UPDATE barbeiros SET nome = CASE id WHEN 1 THEN 'Rafael Moura' WHEN 2 THEN 'Thiago Brandão' ELSE 'Caio Henrique' END`);
+    await db.executarScript(lerSchema());
+    await db.executarScript(lerSchema());
+    const barbeiros = await db.query("SELECT id, nome FROM barbeiros ORDER BY id");
+    assert.deepEqual(barbeiros.map((b) => `${b.id}:${b.nome}`), ["1:Marcio Rocha", "2:Kaua", "3:Felipe"]);
+    const { n } = await db.um("SELECT COUNT(*)::int AS n FROM servicos WHERE nome = 'Sobrancelha'");
+    assert.equal(n, 1);
   });
 });

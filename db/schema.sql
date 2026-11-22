@@ -108,9 +108,9 @@ END $$;
 -- Equipe e serviços da casa (iguais ao menu da página inicial). Só entram se a tabela estiver vazia.
 INSERT INTO barbeiros (nome, especialidade)
 SELECT * FROM (VALUES
-  ('Rafael Moura', 'Cortes clássicos e navalha'),
-  ('Thiago Brandão', 'Degradê e freestyle'),
-  ('Caio Henrique', 'Barba e bigode')
+  ('Marcio Rocha', 'Barbeiro e administrador'),
+  ('Kaua', 'Barbeiro'),
+  ('Felipe', 'Barbeiro')
 ) AS v(nome, especialidade)
 WHERE NOT EXISTS (SELECT 1 FROM barbeiros);
 
@@ -127,3 +127,20 @@ SELECT * FROM (VALUES
   ('Bigode Modelado', 'Barba e Bigode', 30, 3500)
 ) AS v(nome, categoria, duracao_min, preco_centavos)
 WHERE NOT EXISTS (SELECT 1 FROM servicos);
+
+-- ---------- Ajustes em bancos que já existiam (rodam uma vez; depois não acham mais nada) ----------
+
+-- Equipe atual (novembro de 2026): troca os nomes de exemplo pelos barbeiros da casa, mantendo os ids.
+UPDATE barbeiros SET nome = v.novo, especialidade = v.especialidade
+  FROM (VALUES
+    ('Rafael Moura', 'Marcio Rocha', 'Barbeiro e administrador'),
+    ('Thiago Brandão', 'Kaua', 'Barbeiro'),
+    ('Caio Henrique', 'Felipe', 'Barbeiro')
+  ) AS v(antigo, novo, especialidade)
+ WHERE barbeiros.nome = v.antigo
+   AND NOT EXISTS (SELECT 1 FROM barbeiros b2 WHERE b2.nome = v.novo);
+
+-- Serviços acrescentados depois da primeira versão.
+INSERT INTO servicos (nome, categoria, duracao_min, preco_centavos)
+VALUES ('Sobrancelha', 'Barba e Bigode', 15, 1500)
+ON CONFLICT (nome) DO NOTHING;

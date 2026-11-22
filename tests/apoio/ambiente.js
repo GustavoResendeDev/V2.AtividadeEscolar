@@ -19,7 +19,7 @@ async function bancoDeTeste({ barbeiro = true } = {}) {
   const db = await bancoLocal();
   await criarUsuario(db, { nome: "Admin", email: "admin@teste.com", senha: SENHA, papel: "admin" });
   if (barbeiro)
-    await criarUsuario(db, { nome: "Rafael Moura", email: "rafael@teste.com", senha: SENHA, papel: "barbeiro", barbeiroId: 1 });
+    await criarUsuario(db, { nome: "Marcio Rocha", email: "marcio@teste.com", senha: SENHA, papel: "barbeiro", barbeiroId: 1 });
   return db;
 }
 

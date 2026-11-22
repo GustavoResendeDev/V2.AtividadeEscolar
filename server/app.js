@@ -5,7 +5,7 @@ const { Hono } = require("hono");
 const { criarAuth, criarLimitador } = require("./auth");
 const { criarAgenda, ErroNegocio } = require("./agenda");
 
-const WHATSAPP_BARBEARIA = "5562993548184";
+const WHATSAPP_BARBEARIA = "5562992002388";
 
 // Os mesmos cabeçalhos estão em public/_headers, que a Cloudflare aplica às páginas (um teste confere).
 const CSP = [
@@ -40,16 +40,16 @@ function formatarDataBR(iso) {
 // Mensagem que o cliente envia à barbearia, no formato do WhatsApp (*negrito*, _itálico_).
 function mensagemParaBarbearia(a) {
   return [
-    "*NOVO AGENDAMENTO* ✂️",
+    "*NOVO AGENDAMENTO*",
     "_Nova Era Barbearia_",
     "",
-    `🔖 *Código:* ${a.codigo}`,
-    `👤 *Cliente:* ${a.cliente.nome}`,
-    `💈 *${a.servico.quantidade > 1 ? "Serviços" : "Serviço"}:* ${a.servico.nome}`,
-    `💰 *Valor:* R$ ${a.preco.toFixed(2).replace(".", ",")}`,
-    `📅 *Data:* ${formatarDataBR(a.data)}`,
-    `⏰ *Horário:* ${a.hora} às ${a.termino}`,
-    `🧔 *Barbeiro:* ${a.barbeiro.nome}`,
+    `*Código:* ${a.codigo}`,
+    `*Cliente:* ${a.cliente.nome}`,
+    `*${a.servico.quantidade > 1 ? "Serviços" : "Serviço"}:* ${a.servico.nome}`,
+    `*Valor:* R$ ${a.preco.toFixed(2).replace(".", ",")}`,
+    `*Data:* ${formatarDataBR(a.data)}`,
+    `*Horário:* ${a.hora} às ${a.termino}`,
+    `*Barbeiro:* ${a.barbeiro.nome}`,
     "",
     "Aguardo a confirmação. Obrigado!",
     "",

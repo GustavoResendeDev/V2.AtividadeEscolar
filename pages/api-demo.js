@@ -8,7 +8,7 @@
   "use strict";
 
   const CHAVE = "novaera-demo-v1";
-  const WHATSAPP_BARBEARIA = "5562993548184";
+  const WHATSAPP_BARBEARIA = "5562992002388";
   const SENHA_DEMO = "novaera2026";
   const R = () => self; // funções de public/js/regras.js (carregado nas páginas que usam agenda)
 
@@ -22,9 +22,9 @@
   };
 
   const BARBEIROS = [
-    { id: 1, nome: "Rafael Moura", especialidade: "Cortes clássicos e navalha" },
-    { id: 2, nome: "Thiago Brandão", especialidade: "Degradê e freestyle" },
-    { id: 3, nome: "Caio Henrique", especialidade: "Barba e bigode" },
+    { id: 1, nome: "Marcio Rocha", especialidade: "Barbeiro e administrador" },
+    { id: 2, nome: "Kaua", especialidade: "Barbeiro" },
+    { id: 3, nome: "Felipe", especialidade: "Barbeiro" },
   ];
   const SERVICOS = [
     ["Corte Masculino", "Cabelo", 60, 4000],
@@ -36,12 +36,13 @@
     ["Barba Tradicional / Modelada", "Barba e Bigode", 30, 3500],
     ["Barba com Máquina", "Barba e Bigode", 30, 3500],
     ["Bigode Modelado", "Barba e Bigode", 30, 3500],
+    ["Sobrancelha", "Barba e Bigode", 15, 1500],
   ].map(([nome, categoria, duracao_min, preco_centavos], i) => ({ id: i + 1, nome, categoria, duracao_min, preco_centavos }));
   const USUARIOS = [
     { id: 1, nome: "Administrador", email: "admin@novaera.com.br", papel: "admin", barbeiro_id: null },
-    { id: 2, nome: "Rafael Moura", email: "rafael@novaera.com.br", papel: "barbeiro", barbeiro_id: 1 },
-    { id: 3, nome: "Thiago Brandão", email: "thiago@novaera.com.br", papel: "barbeiro", barbeiro_id: 2 },
-    { id: 4, nome: "Caio Henrique", email: "caio@novaera.com.br", papel: "barbeiro", barbeiro_id: 3 },
+    { id: 2, nome: "Marcio Rocha", email: "marcio@novaera.com.br", papel: "barbeiro", barbeiro_id: 1 },
+    { id: 3, nome: "Kaua", email: "kaua@novaera.com.br", papel: "barbeiro", barbeiro_id: 2 },
+    { id: 4, nome: "Felipe", email: "felipe@novaera.com.br", papel: "barbeiro", barbeiro_id: 3 },
   ];
 
   // ---------- Armazenamento (localStorage, com memória como reserva) ----------
@@ -225,16 +226,16 @@
 
     const a = formatar(registro);
     const texto = [
-      "*NOVO AGENDAMENTO* ✂️",
+      "*NOVO AGENDAMENTO*",
       "_Nova Era Barbearia_",
       "",
-      `🔖 *Código:* ${a.codigo}`,
-      `👤 *Cliente:* ${nome}`,
-      `💈 *${a.servico.quantidade > 1 ? "Serviços" : "Serviço"}:* ${a.servico.nome}`,
-      `💰 *Valor:* R$ ${a.preco.toFixed(2).replace(".", ",")}`,
-      `📅 *Data:* ${formatarDataBR(a.data)}`,
-      `⏰ *Horário:* ${a.hora} às ${a.termino}`,
-      `🧔 *Barbeiro:* ${a.barbeiro.nome}`,
+      `*Código:* ${a.codigo}`,
+      `*Cliente:* ${nome}`,
+      `*${a.servico.quantidade > 1 ? "Serviços" : "Serviço"}:* ${a.servico.nome}`,
+      `*Valor:* R$ ${a.preco.toFixed(2).replace(".", ",")}`,
+      `*Data:* ${formatarDataBR(a.data)}`,
+      `*Horário:* ${a.hora} às ${a.termino}`,
+      `*Barbeiro:* ${a.barbeiro.nome}`,
       "",
       "Aguardo a confirmação. Obrigado!",
       "",

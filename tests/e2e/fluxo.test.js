@@ -62,7 +62,7 @@ test("cliente agenda e o barbeiro confirma no painel", { skip: !playwright && "P
   await pagina.locator(".opcaoServico", { hasText: "Corte Masculino" }).click();
   await pagina.locator(".opcaoServico", { hasText: "Barba Tradicional" }).click();
   assert.equal(await pagina.isChecked(".qualquerBarbeiro input"), true, "sem preferência vem marcado");
-  await pagina.locator(".opcaoBarbeiro", { hasText: "Caio Henrique" }).click();
+  await pagina.locator(".opcaoBarbeiro", { hasText: "Felipe" }).click();
   await esperarHorarios("1h30");
   await pagina.locator(".opcaoHora", { hasText: "15:00" }).click();
   assert.match(await pagina.textContent("#resTotal"), /75,00/, "resumo soma os serviços");
@@ -71,17 +71,17 @@ test("cliente agenda e o barbeiro confirma no painel", { skip: !playwright && "P
 
   await pagina.waitForSelector("#confirmacao:not([hidden])");
   const resumo = await pagina.textContent(".resumo");
-  assert.match(resumo, /Caio Henrique/);
+  assert.match(resumo, /Felipe/);
   assert.match(resumo, /15:00 às 16:30/);
   assert.match(resumo, /Corte Masculino, Barba Tradicional/);
-  assert.match(await pagina.getAttribute("#abrirWhatsapp", "href"), /^https:\/\/wa\.me\/5562993548184\?text=/);
+  assert.match(await pagina.getAttribute("#abrirWhatsapp", "href"), /^https:\/\/wa\.me\/5562992002388\?text=/);
 
   // 2. O mesmo horário não aparece mais como livre
   await pagina.click("#novoAgendamento");
   await pagina.fill("#data", DATA);
   await pagina.dispatchEvent("#data", "change");
   await pagina.locator(".opcaoServico", { hasText: "Corte Masculino" }).click();
-  await pagina.locator(".opcaoBarbeiro", { hasText: "Caio Henrique" }).click();
+  await pagina.locator(".opcaoBarbeiro", { hasText: "Felipe" }).click();
   await esperarHorarios("1h");
   const horas = await pagina.$$eval("input[name='hora']", (os) => os.map((o) => o.value));
   assert.ok(!horas.includes("15:00") && !horas.includes("16:00"), "15:00 a 16:30 deveriam estar ocupados");
@@ -104,6 +104,19 @@ test("cliente agenda e o barbeiro confirma no painel", { skip: !playwright && "P
   assert.equal(await item.getAttribute("data-status"), "pendente");
   await item.getByRole("button", { name: /Confirmar/ }).click();
   await pagina.waitForSelector('.atendimento[data-status="confirmado"]');
+
+  // Ao confirmar, o painel oferece enviar a confirmação com a localização pelo WhatsApp do cliente.
+  await pagina.waitForSelector("#dialogoAvisarCliente[open]");
+  const envio = new URL(await pagina.getAttribute("#enviarConfirmacao", "href"));
+  assert.equal(envio.origin + envio.pathname, "https://wa.me/5562987654321");
+  const confirmacao = envio.searchParams.get("text");
+  assert.match(confirmacao, /^\*AGENDAMENTO CONFIRMADO\*/);
+  assert.match(confirmacao, /Olá, Lucas!/);
+  assert.match(confirmacao, /\*Horário:\* 15:00 às 16:30/);
+  assert.match(confirmacao, /https:\/\/maps\.app\.goo\.gl\//);
+  assert.match(confirmacao, /Obrigado pela preferência/);
+  assert.ok(!/\p{Extended_Pictographic}/u.test(confirmacao), "a confirmação não pode ter emojis");
+  await pagina.locator("#dialogoAvisarCliente").getByRole("button", { name: "Agora não" }).click();
   assert.equal(await pagina.textContent("#indConfirmados"), "1");
   await pagina.locator(".atendimento", { hasText: "Lucas Ferreira" }).getByRole("button", { name: /Concluir/ }).click();
   await pagina.waitForSelector('.atendimento[data-status="concluido"]');
@@ -121,6 +134,8 @@ test("cliente agenda e o barbeiro confirma no painel", { skip: !playwright && "P
   assert.equal(await pagina.inputValue("#novoHora"), "09:00");
   assert.equal(await pagina.inputValue("#novoBarbeiro"), "1");
   await pagina.fill("#novoNome", "Marcos Balcão");
+  await pagina.locator(".servicoMarcavel", { hasText: "Corte Masculino" }).click();
+  assert.match(await pagina.textContent("#totalNovoServicos"), /1 serviço · 1h/);
   await pagina.click("#salvarNovo");
   const evento = pagina.locator('.colunaDia[data-barbeiro="1"] .evento', { hasText: "Marcos Balcão" });
   await evento.waitFor();
@@ -140,8 +155,8 @@ test("cliente agenda e o barbeiro confirma no painel", { skip: !playwright && "P
   // 7. Relatório: quantas pessoas cada barbeiro atendeu no dia
   await pagina.click("#abrirRelatorio");
   await pagina.waitForSelector("#resultadoRelatorio:not([hidden])");
-  const linhaCaio = pagina.locator("#corpoRelatorio tr", { hasText: "Caio Henrique" });
-  assert.equal((await linhaCaio.locator("td").first().textContent()).trim(), "1");
+  const linhaFelipe = pagina.locator("#corpoRelatorio tr", { hasText: "Felipe" });
+  assert.equal((await linhaFelipe.locator("td").first().textContent()).trim(), "1");
   await pagina.keyboard.press("Escape");
 
   // 8. Sair encerra a sessão

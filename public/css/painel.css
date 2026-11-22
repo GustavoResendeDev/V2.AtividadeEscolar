@@ -1626,6 +1626,68 @@ header.cabecalhoPainel {
   color: var(--texto-apagado);
 }
 
+/* Agendamento manual: vários serviços */
+.campoServicos {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.campoServicos legend {
+  padding: 0;
+  margin-bottom: 8px;
+  font-size: 0.8rem;
+}
+
+.listaMarcarServicos {
+  display: grid;
+  max-height: 240px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border: 1px solid var(--linha);
+  border-radius: var(--raio-pequeno);
+}
+
+.servicoMarcavel {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  min-height: 48px;
+  padding: 8px 12px;
+  font-size: 0.9rem;
+  color: var(--texto);
+  cursor: pointer;
+}
+
+.servicoMarcavel + .servicoMarcavel {
+  border-top: 1px solid var(--linha);
+}
+
+.servicoMarcavel:has(input:checked) {
+  background: var(--preto-3);
+}
+
+.servicoMarcavel input {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  accent-color: var(--branco);
+}
+
+.servicoMarcavel .detalheServico {
+  font-size: 0.8rem;
+  color: var(--texto-suave);
+  white-space: nowrap;
+}
+
+.totalServicos {
+  margin: 8px 0 0;
+  font-size: 0.85rem;
+  color: var(--texto-suave);
+}
+
 .marcador {
   display: flex;
   align-items: center;
@@ -1754,8 +1816,13 @@ header.cabecalhoPainel {
   font-size: 0.78rem;
 }
 
-.filtroRelatorio .campo input {
+.filtroRelatorio .campo input,
+.filtroRelatorio .campo select {
   height: 44px !important;
+}
+
+.filtroRelatorio .campoRelBarbeiro {
+  width: 220px;
 }
 
 .filtroRelatorio .segmentado {
@@ -2072,6 +2139,9 @@ header.cabecalhoPainel {
     flex: 1;
     width: auto;
   }
+  .filtroRelatorio .campoRelBarbeiro {
+    flex-basis: 100%;
+  }
   .filtroRelatorio .botao,
   .rodapeDialogo .botao {
     width: 100%;
@@ -2155,4 +2225,27 @@ header.cabecalhoPainel {
     print-color-adjust: exact;
     -webkit-print-color-adjust: exact;
   }
+}
+
+/* Prévia da mensagem de confirmação enviada ao cliente */
+.textoAvisarCliente {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--texto-suave);
+}
+
+.previaMensagem {
+  max-height: 260px;
+  margin: 0;
+  padding: 12px 14px;
+  overflow-y: auto;
+  font-family: var(--fonte-texto);
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: var(--texto);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  background: var(--preto-2);
+  border: 1px solid var(--linha);
+  border-radius: var(--raio-pequeno);
 }

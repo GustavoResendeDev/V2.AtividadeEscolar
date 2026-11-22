@@ -177,10 +177,11 @@
             <label for="novoTelefone">WhatsApp <span class="opcional">(opcional)</span></label>
             <input id="novoTelefone" name="telefone" type="tel" inputmode="tel" autocomplete="off" placeholder="(62) 99999-9999" />
           </div>
-          <div class="campo campoLargo">
-            <label for="novoServico">Serviço</label>
-            <select id="novoServico" name="servicoId" required></select>
-          </div>
+          <fieldset class="campo campoLargo campoServicos">
+            <legend>Serviços <span class="opcional">(marque um ou mais)</span></legend>
+            <div class="listaMarcarServicos" id="novoServicos"></div>
+            <p class="totalServicos" id="totalNovoServicos" aria-live="polite">Nenhum serviço marcado</p>
+          </fieldset>
           <div class="campo campoLargo" id="caixaNovoBarbeiro">
             <label for="novoBarbeiro">Barbeiro</label>
             <select id="novoBarbeiro" name="barbeiroId"></select>
@@ -206,6 +207,25 @@
           <button type="submit" class="botao" id="salvarNovo">Agendar</button>
         </div>
       </form>
+    </dialog>
+
+    <!-- Depois de confirmar: avisar o cliente pelo WhatsApp -->
+    <dialog class="dialogo" id="dialogoAvisarCliente" aria-labelledby="tituloAvisarCliente">
+      <div class="conteudoDialogo">
+        <div class="topoDialogo">
+          <div>
+            <p class="minititulo">Atendimento confirmado</p>
+            <h2 class="tituloDialogo" id="tituloAvisarCliente">Avisar o cliente</h2>
+          </div>
+          <button type="button" class="fecharDialogo" data-fechar aria-label="Fechar">×</button>
+        </div>
+        <p class="textoAvisarCliente" id="textoAvisarCliente"></p>
+        <pre class="previaMensagem" id="previaMensagem"></pre>
+        <div class="rodapeDialogo">
+          <button type="button" class="botao botaoContorno" data-fechar>Agora não</button>
+          <a class="botao" id="enviarConfirmacao" href="#" target="_blank" rel="noopener noreferrer">Enviar pelo WhatsApp</a>
+        </div>
+      </div>
     </dialog>
 
     <!-- Detalhes de um atendimento -->
@@ -260,6 +280,10 @@
             <button type="button" class="opcaoSegmento" data-atalho="dia">Hoje</button>
             <button type="button" class="opcaoSegmento" data-atalho="semana">Esta semana</button>
             <button type="button" class="opcaoSegmento" data-atalho="mes">Este mês</button>
+          </div>
+          <div class="campo campoRelBarbeiro" id="caixaRelBarbeiro" hidden>
+            <label for="relBarbeiro">Relatório de</label>
+            <select id="relBarbeiro"></select>
           </div>
           <div class="campo">
             <label for="relInicio">De</label>

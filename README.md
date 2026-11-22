@@ -59,7 +59,7 @@ os serviços e barbeiros da casa, e são criados logins de demonstração (senha
 | Login | Papel |
 | --- | --- |
 | `admin@novaera.com.br` | Administrador (vê todos os barbeiros) |
-| `rafael@novaera.com.br`, `thiago@novaera.com.br`, `caio@novaera.com.br` | Barbeiro (vê só a própria agenda) |
+| `marcio@novaera.com.br`, `kaua@novaera.com.br`, `felipe@novaera.com.br` | Barbeiro (vê só a própria agenda) |
 
 > Os logins de demonstração só existem no seu computador. Em produção, o administrador é criado
 > no primeiro deploy pelos segredos `ADMIN_EMAIL` e `ADMIN_SENHA` (veja [DEPLOY.md](DEPLOY.md)).

@@ -719,14 +719,63 @@ document.addEventListener("DOMContentLoaded", async () => {
     return td;
   }
 
+  // ---------- Mensagens ao cliente (WhatsApp) ----------
+  const ENDERECO = "R. José Gomes Bailão, nº 579, Cidade Jardim, Goiânia - GO, 74423-500";
+  const LINK_MAPA = "https://maps.app.goo.gl/fb81ei1H31uYVrbQA";
+
+  /* Confirmação do agendamento: formato do WhatsApp (*negrito*, _itálico_), sem emojis. */
+  function mensagemConfirmacao(a) {
+    const primeiroNome = a.cliente.nome.split(" ")[0];
+    const dia = formatarData(a.data, { weekday: "long", day: "2-digit", month: "2-digit", year: "numeric" });
+    return [
+      "*AGENDAMENTO CONFIRMADO*",
+      "_Nova Era Barbearia_",
+      "",
+      `Olá, ${primeiroNome}! Seu horário está confirmado. Estamos preparando tudo para receber você.`,
+      "",
+      `*Data:* ${dia.charAt(0).toUpperCase()}${dia.slice(1)}`,
+      `*Horário:* ${a.hora} às ${a.termino}`,
+      `*${a.servico.quantidade > 1 ? "Serviços" : "Serviço"}:* ${a.servico.nome}`,
+      `*Barbeiro:* ${a.barbeiro.nome}`,
+      `*Valor:* ${reais(a.preco)}`,
+      `*Código:* ${a.codigo}`,
+      "",
+      "*ONDE ESTAMOS*",
+      ENDERECO,
+      `Como chegar: ${LINK_MAPA}`,
+      "",
+      "Recomendamos chegar com 5 minutos de antecedência. Se precisar remarcar ou cancelar, é só responder esta mensagem.",
+      "",
+      "Obrigado pela preferência e pela confiança. Será um prazer atender você!",
+      "",
+      "*Nova Era Barbearia*",
+      "_Atendimento personalizado e de alta qualidade._",
+    ].join("\n");
+  }
+
+  const linkParaCliente = (a, texto) => `https://wa.me/${a.cliente.whatsapp}?text=${encodeURIComponent(texto)}`;
+
   function linkWhatsapp(a) {
     if (!a.cliente.whatsapp) return null;
     const texto =
-      a.status === "pendente"
-        ? `Olá, ${a.cliente.nome.split(" ")[0]}! Aqui é da Nova Era Barbearia. Seu horário de ${a.hora} (${a.servico.nome}) com ${a.barbeiro.nome} está confirmado. Até lá!`
+      a.status === "confirmado"
+        ? mensagemConfirmacao(a)
         : `Olá, ${a.cliente.nome.split(" ")[0]}! Aqui é da Nova Era Barbearia.`;
-    return `https://wa.me/${a.cliente.whatsapp}?text=${encodeURIComponent(texto)}`;
+    return linkParaCliente(a, texto);
   }
+
+  /* Depois de confirmar, oferece o envio da confirmação ao cliente. O envio é um toque da equipe:
+     o WhatsApp não permite mandar mensagens sozinho sem a API paga do WhatsApp Business. */
+  const dialogoAvisarCliente = el("dialogoAvisarCliente");
+  function oferecerAvisoAoCliente(a) {
+    if (!a.cliente.whatsapp) return;
+    const texto = mensagemConfirmacao(a);
+    el("textoAvisarCliente").textContent = `Envie a confirmação com a localização para ${a.cliente.nome} (${a.cliente.telefone}).`;
+    el("previaMensagem").textContent = texto.replace(/[*_]/g, "");
+    el("enviarConfirmacao").href = linkParaCliente(a, texto);
+    dialogoAvisarCliente.showModal();
+  }
+  el("enviarConfirmacao").addEventListener("click", () => setTimeout(() => dialogoAvisarCliente.close(), 0));
 
   function etiqueta(status) {
     const e = criar("span", "etiquetaStatus", ROTULOS_STATUS[status]);
@@ -868,6 +917,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       anuncio.textContent = `${atualizado.cliente.nome}, ${atualizado.hora}: ${ROTULOS_STATUS[atualizado.status]}.`;
       avisoRapido(`${a ? a.cliente.nome : atualizado.cliente.nome}: ${ROTULOS_STATUS[atualizado.status]}`);
       await carregar();
+      if (atualizado.status === "confirmado") oferecerAvisoAoCliente(atualizado);
       return atualizado;
     } catch (erro) {
       mostrarAviso(erro.message);
@@ -921,19 +971,40 @@ document.addEventListener("DOMContentLoaded", async () => {
   // Novo agendamento
   const dialogoNovo = el("dialogoNovo");
   const formNovo = el("formNovo");
-  const novoServico = el("novoServico");
+  const novoServicos = el("novoServicos");
   const novoBarbeiro = el("novoBarbeiro");
   const novoData = el("novoData");
   const novoHora = el("novoHora");
 
+  const textoDuracao = (min) =>
+    min >= 60 ? `${Math.floor(min / 60)}h${min % 60 ? String(min % 60).padStart(2, "0") : ""}` : `${min} min`;
+
+  // Lista de marcar: a equipe pode registrar vários serviços no mesmo atendimento.
   servicos.forEach((s) => {
-    const duracao = s.duracao_min >= 60 ? `${Math.floor(s.duracao_min / 60)}h${s.duracao_min % 60 ? String(s.duracao_min % 60).padStart(2, "0") : ""}` : `${s.duracao_min} min`;
-    novoServico.append(new Option(`${s.nome} · ${duracao} · ${reais(s.preco_centavos / 100)}`, s.id));
+    const opcao = criar("label", "servicoMarcavel");
+    const caixa = document.createElement("input");
+    caixa.type = "checkbox";
+    caixa.name = "servicoIds";
+    caixa.value = s.id;
+    opcao.append(caixa, criar("span", "", s.nome), criar("span", "detalheServico", `${textoDuracao(s.duracao_min)} · ${reais(s.preco_centavos / 100)}`));
+    novoServicos.append(opcao);
   });
+
+  const servicosMarcados = () =>
+    [...novoServicos.querySelectorAll("input:checked")].map((c) => servicos.find((s) => String(s.id) === c.value)).filter(Boolean);
+
+  function atualizarTotalNovo() {
+    const marcados = servicosMarcados();
+    const minutos = marcados.reduce((t, s) => t + s.duracao_min, 0);
+    const centavos = marcados.reduce((t, s) => t + s.preco_centavos, 0);
+    el("totalNovoServicos").textContent = marcados.length
+      ? `${marcados.length} ${marcados.length > 1 ? "serviços" : "serviço"} · ${textoDuracao(minutos)} · ${reais(centavos / 100)}`
+      : "Nenhum serviço marcado";
+  }
   if (ehAdmin) novoBarbeiro.append(new Option("Quem estiver livre", ""));
   meusBarbeiros.forEach((b) => novoBarbeiro.append(new Option(b.nome, b.id)));
 
-  const duracaoServico = () => servicos.find((s) => String(s.id) === novoServico.value)?.duracao_min || 30;
+  const duracaoServico = () => servicosMarcados().reduce((t, s) => t + s.duracao_min, 0) || intervaloGrade;
 
   async function atualizarHorariosNovo(preferida) {
     const desejada = preferida || novoHora.value;
@@ -944,10 +1015,12 @@ document.addEventListener("DOMContentLoaded", async () => {
     preencherHorarios(novoHora, duracaoServico(), ocupados, novoHora.value || desejada);
   }
 
-  [novoServico, novoBarbeiro, novoData].forEach((c) => c.addEventListener("change", () => atualizarHorariosNovo()));
+  [novoServicos, novoBarbeiro, novoData].forEach((c) => c.addEventListener("change", () => atualizarHorariosNovo()));
+  novoServicos.addEventListener("change", atualizarTotalNovo);
 
   function abrirNovo({ data, hora, barbeiroId } = {}) {
     formNovo.reset();
+    atualizarTotalNovo();
     mostrarErro(el("erroNovo"), "");
     let dia = data || (estado.data >= hojeISO() ? estado.data : hojeISO());
     while (diaFechado(dia)) dia = somarDias(dia, 1);
@@ -975,6 +1048,11 @@ document.addEventListener("DOMContentLoaded", async () => {
       mostrarErro(el("erroNovo"), "Informe o nome do cliente.");
       return el("novoNome").focus();
     }
+    const marcados = servicosMarcados();
+    if (!marcados.length) {
+      mostrarErro(el("erroNovo"), "Marque pelo menos um serviço.");
+      return novoServicos.querySelector("input")?.focus();
+    }
     const salvar = el("salvarNovo");
     salvar.disabled = true;
     try {
@@ -983,7 +1061,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         body: JSON.stringify({
           nome,
           telefone: el("novoTelefone").value,
-          servicoId: Number(novoServico.value),
+          servicoIds: marcados.map((s) => s.id),
           barbeiroId: Number(novoBarbeiro.value) || null,
           data: novoData.value,
           hora: novoHora.value,
@@ -1110,6 +1188,20 @@ document.addEventListener("DOMContentLoaded", async () => {
   const relFim = el("relFim");
   let ultimoRelatorio = null;
 
+  /* Cada barbeiro emite o próprio relatório (o servidor só devolve os dados dele).
+     O administrador escolhe: estabelecimento completo ou um barbeiro. */
+  const relBarbeiro = el("relBarbeiro");
+  if (ehAdmin) {
+    relBarbeiro.append(new Option("Estabelecimento completo", ""));
+    todosBarbeiros.forEach((b) => relBarbeiro.append(new Option(b.nome, b.id)));
+    el("caixaRelBarbeiro").hidden = false;
+    relBarbeiro.addEventListener("change", () => gerarRelatorio());
+  } else {
+    el("tituloRelatorio").textContent = "Meu relatório de rendimento";
+  }
+  const nomeDoRelatorio = () =>
+    ehAdmin && !relBarbeiro.value ? "Estabelecimento completo" : (meusBarbeiros.find((b) => String(b.id) === (relBarbeiro.value || String(usuario.barbeiro_id))) || {}).nome || usuario.nome;
+
   function periodoDoAtalho(modo) {
     const salvo = { modo: estado.modo, data: estado.data };
     estado.modo = modo;
@@ -1148,7 +1240,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     const botao = el("gerarRelatorio");
     botao.disabled = true;
     try {
-      const r = await api(`/api/admin/relatorio?${new URLSearchParams({ inicio: relInicio.value, fim: relFim.value })}`);
+      const filtro = { inicio: relInicio.value, fim: relFim.value };
+      if (ehAdmin && relBarbeiro.value) filtro.barbeiro = relBarbeiro.value;
+      const r = await api(`/api/admin/relatorio?${new URLSearchParams(filtro)}`);
       ultimoRelatorio = r;
       desenharRelatorio(r);
     } catch (e) {
@@ -1161,8 +1255,8 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   function desenharRelatorio(r) {
     const longo = { day: "numeric", month: "long", year: "numeric" };
-    el("periodoRelatorio").textContent =
-      r.inicio === r.fim ? formatarData(r.inicio, longo) : `${formatarData(r.inicio, longo)} a ${formatarData(r.fim, longo)}`;
+    const quando = r.inicio === r.fim ? formatarData(r.inicio, longo) : `${formatarData(r.inicio, longo)} a ${formatarData(r.fim, longo)}`;
+    el("periodoRelatorio").textContent = `${nomeDoRelatorio()} · ${quando}`;
 
     const destaques = el("destaquesRelatorio");
     const lider = r.barbeiros[0];
@@ -1279,7 +1373,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
     const a = criar("a");
     a.href = url;
-    a.download = `relatorio-atendimentos-${r.inicio}-a-${r.fim}.csv`;
+    const quem = nomeDoRelatorio().normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-");
+    a.download = `relatorio-${quem}-${r.inicio}-a-${r.fim}.csv`;
     document.body.append(a);
     a.click();
     a.remove();

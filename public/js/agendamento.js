@@ -3,7 +3,7 @@
    2. Mostra só os horários livres para o tempo total dos serviços (GET /api/disponibilidade).
    3. Grava a reserva (POST /api/agendamentos) e oferece o resumo pronto para o WhatsApp.
    As regras de funcionamento vêm de regras.js; o servidor confere tudo de novo. */
-const WHATSAPP_BARBEARIA = "5562993548184";
+const WHATSAPP_BARBEARIA = "5562992002388";
 const MAX_SERVICOS = 5;
 const DIAS_ATALHO = 6; // quantos próximos dias abertos aparecem como atalho
 

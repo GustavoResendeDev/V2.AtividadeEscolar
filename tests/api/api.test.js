@@ -18,16 +18,20 @@ describe("API pública", () => {
   before(async () => (s = await subirServidor()));
   after(() => s.fechar());
 
-  test("GET /api/servicos lista os 9 serviços do menu", async () => {
+  test("GET /api/servicos lista os 10 serviços do menu, com a Sobrancelha", async () => {
     const r = await s.req("GET", "/api/servicos");
     assert.equal(r.status, 200);
-    assert.equal(r.json.length, 9);
+    assert.equal(r.json.length, 10);
+    assert.deepEqual(
+      r.json.find((x) => x.nome === "Sobrancelha"),
+      { id: 10, nome: "Sobrancelha", categoria: "Barba e Bigode", duracao_min: 15, preco_centavos: 1500 }
+    );
     assert.deepEqual(Object.keys(r.json[0]).sort(), ["categoria", "duracao_min", "id", "nome", "preco_centavos"]);
   });
 
   test("GET /api/barbeiros lista os barbeiros ativos", async () => {
     const r = await s.req("GET", "/api/barbeiros");
-    assert.deepEqual(r.json.map((b) => b.nome), ["Rafael Moura", "Thiago Brandão", "Caio Henrique"]);
+    assert.deepEqual(r.json.map((b) => b.nome), ["Marcio Rocha", "Kaua", "Felipe"]);
   });
 
   test("GET /api/disponibilidade valida a data", async () => {
@@ -42,10 +46,12 @@ describe("API pública", () => {
   test("POST /api/agendamentos cria e devolve o link do WhatsApp", async () => {
     const r = await s.req("POST", "/api/agendamentos", { corpo: corpo() });
     assert.equal(r.status, 201);
-    assert.equal(r.json.barbeiro, "Rafael Moura");
+    assert.equal(r.json.barbeiro, "Marcio Rocha");
     assert.equal(r.json.termino, "15:00");
-    assert.ok(r.json.whatsapp.startsWith("https://wa.me/5562993548184?text="));
-    assert.match(decodeURIComponent(r.json.whatsapp), new RegExp(r.json.codigo));
+    assert.ok(r.json.whatsapp.startsWith("https://wa.me/5562992002388?text="));
+    const mensagem = decodeURIComponent(r.json.whatsapp.split("?text=")[1]);
+    assert.match(mensagem, new RegExp(r.json.codigo));
+    assert.ok(!/\p{Extended_Pictographic}/u.test(mensagem), "a mensagem não pode ter emojis");
   });
 
   test("POST com conflito devolve 409 e a disponibilidade passa a mostrar ocupado", async () => {
@@ -145,12 +151,12 @@ describe("API do painel", () => {
     await s.req("POST", "/api/agendamentos", { corpo: corpo({ barbeiroId: 1, hora: "09:00" }) });
     await s.req("POST", "/api/agendamentos", { corpo: corpo({ barbeiroId: 2, hora: "09:00", telefone: "62977776666" }) });
     const admin = await s.login();
-    const barbeiro = await s.login("rafael@teste.com");
+    const barbeiro = await s.login("marcio@teste.com");
     const todos = await s.req("GET", "/api/admin/agendamentos?data=2026-11-21", { cookie: admin });
     const proprios = await s.req("GET", "/api/admin/agendamentos?data=2026-11-21&barbeiro=2", { cookie: barbeiro });
     assert.equal(todos.json.agendamentos.length, 2);
     assert.equal(proprios.json.agendamentos.length, 1);
-    assert.equal(proprios.json.agendamentos[0].barbeiro.nome, "Rafael Moura");
+    assert.equal(proprios.json.agendamentos[0].barbeiro.nome, "Marcio Rocha");
   });
 
   test("PATCH muda a situação e respeita as transições", async () => {
@@ -183,11 +189,11 @@ describe("API do painel", () => {
 });
 
 describe("API do painel: calendário, agendamento manual e relatório", () => {
-  let s, admin, rafael;
+  let s, admin, marcio;
   before(async () => {
     s = await subirServidor();
     admin = await s.login();
-    rafael = await s.login("rafael@teste.com");
+    marcio = await s.login("marcio@teste.com");
   });
   after(() => s.fechar());
 
@@ -197,7 +203,7 @@ describe("API do painel: calendário, agendamento manual e relatório", () => {
     const r = await s.req("POST", "/api/admin/agendamentos", { cookie: admin, corpo: manual() });
     assert.equal(r.status, 201);
     assert.equal(r.json.status, "confirmado");
-    assert.equal(r.json.barbeiro.nome, "Thiago Brandão");
+    assert.equal(r.json.barbeiro.nome, "Kaua");
     assert.equal(r.json.termino, "11:00");
     assert.equal(r.json.cliente.telefone, "");
   });
@@ -209,9 +215,9 @@ describe("API do painel: calendário, agendamento manual e relatório", () => {
   });
 
   test("barbeiro só agenda para si mesmo", async () => {
-    const r = await s.req("POST", "/api/admin/agendamentos", { cookie: rafael, corpo: manual({ barbeiroId: 2, nome: "Ana Lima" }) });
+    const r = await s.req("POST", "/api/admin/agendamentos", { cookie: marcio, corpo: manual({ barbeiroId: 2, nome: "Ana Lima" }) });
     assert.equal(r.status, 201);
-    assert.equal(r.json.barbeiro.nome, "Rafael Moura");
+    assert.equal(r.json.barbeiro.nome, "Marcio Rocha");
   });
 
   test("lista por período devolve vários dias", async () => {
@@ -234,7 +240,7 @@ describe("API do painel: calendário, agendamento manual e relatório", () => {
     assert.equal(ok.status, 200);
     assert.equal(ok.json.data, "2026-11-25");
     assert.equal(ok.json.hora, "15:30");
-    assert.equal(ok.json.barbeiro.nome, "Caio Henrique");
+    assert.equal(ok.json.barbeiro.nome, "Felipe");
 
     const ocupado = await s.req("GET", "/api/admin/agendamentos?data=2026-11-19", { cookie: admin });
     const outro = ocupado.json.agendamentos.find((a) => a.barbeiro.id === 2).id;
@@ -244,7 +250,7 @@ describe("API do painel: calendário, agendamento manual e relatório", () => {
     });
     assert.equal(choque.status, 409);
     const proibido = await s.req("PATCH", `/api/admin/agendamentos/${outro}/horario`, {
-      cookie: rafael,
+      cookie: marcio,
       corpo: { data: "2026-11-21", hora: "10:00" },
     });
     assert.equal(proibido.status, 403);
@@ -259,14 +265,33 @@ describe("API do painel: calendário, agendamento manual e relatório", () => {
     assert.equal(r.status, 200);
     assert.equal(r.json.barbeiros.length, 3);
     const porNome = Object.fromEntries(r.json.barbeiros.map((b) => [b.nome, b]));
-    assert.equal(porNome["Thiago Brandão"].atendidos, 1);
-    assert.equal(porNome["Rafael Moura"].atendidos, 1);
-    assert.equal(porNome["Caio Henrique"].atendidos, 0);
-    assert.equal(porNome["Caio Henrique"].aguardando, 1);
+    assert.equal(porNome["Kaua"].atendidos, 1);
+    assert.equal(porNome["Marcio Rocha"].atendidos, 1);
+    assert.equal(porNome["Felipe"].atendidos, 0);
+    assert.equal(porNome["Felipe"].aguardando, 1);
     assert.equal(r.json.totais.atendidos, 2);
     assert.equal(r.json.totais.faturado, 80);
 
-    const proprio = await s.req("GET", "/api/admin/relatorio?inicio=2026-11-01&fim=2026-11-30", { cookie: rafael });
-    assert.deepEqual(proprio.json.barbeiros.map((b) => b.nome), ["Rafael Moura"]);
+    const proprio = await s.req("GET", "/api/admin/relatorio?inicio=2026-11-01&fim=2026-11-30", { cookie: marcio });
+    assert.deepEqual(proprio.json.barbeiros.map((b) => b.nome), ["Marcio Rocha"]);
+  });
+
+  test("relatório: admin escolhe um barbeiro; barbeiro não consegue ver o de outro", async () => {
+    const felipe = await s.req("GET", "/api/admin/relatorio?inicio=2026-11-01&fim=2026-11-30&barbeiro=3", { cookie: admin });
+    assert.deepEqual(felipe.json.barbeiros.map((b) => b.nome), ["Felipe"]);
+    const tentativa = await s.req("GET", "/api/admin/relatorio?inicio=2026-11-01&fim=2026-11-30&barbeiro=3", { cookie: marcio });
+    assert.deepEqual(tentativa.json.barbeiros.map((b) => b.nome), ["Marcio Rocha"]);
+  });
+
+  test("agendamento manual com vários serviços soma tempo e valor", async () => {
+    const r = await s.req("POST", "/api/admin/agendamentos", {
+      cookie: marcio,
+      corpo: manual({ servicoId: undefined, servicoIds: [1, 10], nome: "Lucas Duplo", data: "2026-11-26", hora: "09:00" }),
+    });
+    assert.equal(r.status, 201);
+    assert.equal(r.json.servico.nome, "Corte Masculino, Sobrancelha");
+    assert.equal(r.json.servico.quantidade, 2);
+    assert.equal(r.json.termino, "10:15"); // 60 + 15 min
+    assert.equal(r.json.preco, 55); // 40 + 15
   });
 });

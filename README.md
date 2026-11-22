@@ -98,7 +98,8 @@ server/
   index.js, local.js  servidor local (npm start)
 db/schema.sql      tabelas, segurança (RLS) e dados iniciais; o deploy aplica sozinho
 scripts/           aplicar o schema e criar usuário
-wrangler.toml      configuração do Worker
+scripts/montar-site.mjs  monta dist/ (site publicado): minifica e versiona CSS/JS
+wrangler.toml      configuração do Worker (Hyperdrive, API rodando ao lado do banco)
 tests/             unit/, api/ e e2e/
 docs/              documentação do projeto, manual, slides e diagramas
 ```

@@ -238,6 +238,8 @@ document.addEventListener("DOMContentLoaded", () => {
   let lastFrameTime = 0;
   let topOffset = 0;
   let travel = 1;
+  // O vídeo (4 MB) só começa a baixar quando a seção está a uma tela de distância.
+  let perto = !("IntersectionObserver" in window);
 
   const clamp = (n, min, max) => Math.min(max, Math.max(min, n));
 
@@ -293,7 +295,7 @@ document.addEventListener("DOMContentLoaded", () => {
       video.pause();
       return;
     }
-    if (!video.getAttribute("src")) {
+    if (!video.getAttribute("src") && perto) {
       video.muted = true;
       video.src = video.dataset.src;
       video.load();
@@ -328,5 +330,28 @@ document.addEventListener("DOMContentLoaded", () => {
     } else wake();
   });
   if ("ResizeObserver" in window) new ResizeObserver(measure).observe(panel);
+  if (!perto) {
+    const vigia = new IntersectionObserver(
+      (entradas) => {
+        if (!entradas.some((e) => e.isIntersecting)) return;
+        perto = true;
+        vigia.disconnect();
+        measure();
+      },
+      { rootMargin: "100% 0px" }
+    );
+    vigia.observe(section);
+  }
   measure();
+})();
+
+/* Libera as imagens de fundo grandes quando a página terminou de abrir (veja o fim de style.css). */
+(function liberarFundos() {
+  const liberar = () => {
+    document.documentElement.classList.add("fundosLiberados");
+    // A capa do vídeo da localização também espera (capa de vídeo não aceita loading="lazy").
+    document.querySelectorAll("video[data-poster]").forEach((v) => (v.poster = v.dataset.poster));
+  };
+  if (document.readyState === "complete") liberar();
+  else window.addEventListener("load", liberar, { once: true });
 })();

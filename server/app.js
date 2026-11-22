@@ -74,6 +74,7 @@ function criarApp({
   aoCriarAgendamento = null,
   estaticos = null,
   ipDe = () => null,
+  catalogo = undefined,
 } = {}) {
   const app = new Hono();
 
@@ -99,7 +100,7 @@ function criarApp({
   api.use(async (c, next) => {
     const db = typeof banco === "function" ? banco(c) : banco;
     const relogioMs = () => agora().getTime();
-    c.set("agenda", criarAgenda(db, { agora }));
+    c.set("agenda", criarAgenda(db, { agora, catalogo }));
     c.set("auth", criarAuth(db, { producao, agora: relogioMs }));
     c.set("limitador", criarLimitador(db, { agora: relogioMs }));
 
@@ -117,15 +118,18 @@ function criarApp({
       }
     }
     await next();
-    c.res.headers.set("Cache-Control", "no-store");
+    if (!c.res.headers.has("Cache-Control")) c.res.headers.set("Cache-Control", "no-store");
   });
+
+  // Catálogo público: o navegador reaproveita por 5 min e atualiza em segundo plano depois disso.
+  const CACHE_CATALOGO = { "Cache-Control": "public, max-age=300, stale-while-revalidate=86400" };
 
   // ---------- Rotas públicas ----------
   api.get("/saude", (c) => c.json({ ok: true }));
 
-  api.get("/servicos", async (c) => c.json(await c.get("agenda").listarServicos()));
+  api.get("/servicos", async (c) => c.json(await c.get("agenda").listarServicos(), 200, CACHE_CATALOGO));
 
-  api.get("/barbeiros", async (c) => c.json(await c.get("agenda").listarBarbeiros()));
+  api.get("/barbeiros", async (c) => c.json(await c.get("agenda").listarBarbeiros(), 200, CACHE_CATALOGO));
 
   api.get("/disponibilidade", async (c) => {
     // ?servicos=1,7 (vários) ou ?servico=1 (um só)

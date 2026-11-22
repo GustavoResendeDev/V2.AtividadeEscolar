@@ -31,6 +31,8 @@ describe("API pública", () => {
 
   test("GET /api/barbeiros lista os barbeiros ativos", async () => {
     const r = await s.req("GET", "/api/barbeiros");
+    assert.match(r.headers.get("cache-control"), /^public, max-age=300/);
+    assert.equal((await s.req("GET", "/api/sessao")).headers.get("cache-control"), "no-store");
     assert.deepEqual(r.json.map((b) => b.nome), ["Marcio Rocha", "Kaua", "Felipe"]);
   });
 

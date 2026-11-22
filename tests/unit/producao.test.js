@@ -100,3 +100,39 @@ describe("Migração de um banco antigo", () => {
     assert.equal(n, 1);
   });
 });
+
+describe("Desempenho", () => {
+  const { criarCatalogo } = require("../../server/catalogo");
+
+  test("catálogo em memória: lê o banco uma vez e de novo só depois da validade", async () => {
+    let agora = 0;
+    let leituras = 0;
+    const catalogo = criarCatalogo({ validadeMs: 60_000, agora: () => agora });
+    const carregar = async () => (++leituras, ["Corte"]);
+    await catalogo.obter("servicos", carregar);
+    await catalogo.obter("servicos", carregar);
+    assert.equal(leituras, 1);
+    agora = 60_001;
+    await catalogo.obter("servicos", carregar);
+    assert.equal(leituras, 2);
+  });
+
+  test("Worker com catálogo em memória: disponibilidade e agendamento continuam certos", async () => {
+    const { criarAgenda } = require("../../server/agenda");
+    const { relogio } = require("../apoio/ambiente");
+    const db = await bancoDeTeste({ barbeiro: false });
+    try {
+      const agenda = criarAgenda(db, { agora: relogio(), catalogo: criarCatalogo() });
+      const pedido = { nome: "Ana Souza", telefone: "62999990001", servicoIds: [1, 10], data: "2026-11-21", hora: "09:00", consentimento: true };
+      const a = await agenda.criarAgendamento({ ...pedido, barbeiroId: 2 });
+      assert.equal(a.barbeiro.nome, "Kaua");
+      const horarios = await agenda.disponibilidade({ data: "2026-11-21", servicoIds: [1], barbeiroId: 2 });
+      assert.equal(horarios.find((h) => h.hora === "09:00").disponivel, false);
+      await assert.rejects(agenda.disponibilidade({ data: "2026-11-21", servicoId: 1, barbeiroId: 99 }), { campo: "barbeiro" });
+      const semPreferencia = await agenda.criarAgendamento({ ...pedido, telefone: "62999990002", barbeiroId: null });
+      assert.notEqual(semPreferencia.barbeiro.id, 2);
+    } finally {
+      await db.fechar();
+    }
+  });
+});

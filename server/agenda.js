@@ -1,6 +1,7 @@
 /* Regras de negócio da agenda: horários livres, criação de agendamentos sem conflito,
    mudança de status e anonimização de dados antigos (LGPD). Banco: PostgreSQL (server/banco.js). */
 const regras = require("../public/js/regras.js");
+const { semCache } = require("./catalogo");
 
 // Status que ocupam a cadeira do barbeiro. Cancelado libera o horário.
 const STATUS_OCUPAM = ["pendente", "confirmado", "concluido", "faltou"];
@@ -57,22 +58,26 @@ const idValido = (valor) => {
    pegar o mesmo horário ao mesmo tempo, mesmo vindo de servidores diferentes. */
 const travarDia = (tx, data) => tx.query("SELECT pg_advisory_xact_lock(hashtext($1))", [`agenda:${data}`]);
 
-function criarAgenda(db, { agora = () => new Date() } = {}) {
-  async function servicosAtivos() {
-    return db.query(
-      "SELECT id, nome, categoria, duracao_min, preco_centavos FROM servicos WHERE ativo ORDER BY id"
+function criarAgenda(db, { agora = () => new Date(), catalogo = semCache } = {}) {
+  // Catálogo (serviços e barbeiros ativos): pode vir do cache em memória do Worker.
+  // `q` é a transação em andamento, quando houver (o PGlite não aceita outra consulta no meio dela).
+  function servicosAtivos(q = db) {
+    return catalogo.obter("servicos", () =>
+      q.query("SELECT id, nome, categoria, duracao_min, preco_centavos FROM servicos WHERE ativo ORDER BY id")
     );
   }
 
-  const listarServicos = servicosAtivos;
+  const listarServicos = () => servicosAtivos();
 
-  async function listarBarbeiros(q = db) {
-    return q.query("SELECT id, nome, especialidade FROM barbeiros WHERE ativo ORDER BY id");
+  function listarBarbeiros(q = db) {
+    return catalogo.obter("barbeiros", () =>
+      q.query("SELECT id, nome, especialidade FROM barbeiros WHERE ativo ORDER BY id")
+    );
   }
 
   async function barbeiroAtivo(id, q = db) {
     const n = idValido(id);
-    return n ? q.um("SELECT id, nome, especialidade FROM barbeiros WHERE id = $1 AND ativo", [n]) : null;
+    return n ? (await listarBarbeiros(q)).find((b) => b.id === n) || null : null;
   }
 
   const MAX_SERVICOS = 5;
@@ -158,16 +163,15 @@ function criarAgenda(db, { agora = () => new Date() } = {}) {
     validarData(data);
     const { duracao } = await servicosDoPedido({ servicoIds, servicoId });
 
-    let barbeiros;
+    // As duas leituras saem juntas (o catálogo costuma vir da memória).
+    const [todos, ocupacoes] = await Promise.all([listarBarbeiros(), ocupacoesDoDia(db, data)]);
+    let barbeiros = todos;
     if (barbeiroId) {
-      const barbeiro = await barbeiroAtivo(barbeiroId);
-      if (!barbeiro) throw new ErroNegocio(422, "Escolha um barbeiro válido.", "barbeiro");
-      barbeiros = [barbeiro];
-    } else {
-      barbeiros = await listarBarbeiros();
+      const n = idValido(barbeiroId);
+      barbeiros = todos.filter((b) => b.id === n);
+      if (!barbeiros.length) throw new ErroNegocio(422, "Escolha um barbeiro válido.", "barbeiro");
     }
 
-    const ocupacoes = await ocupacoesDoDia(db, data);
     const agendas = barbeiros.map((b) => ocupacoes.get(b.id) || []);
     const minimo = minutoMinimo(data);
     return regras

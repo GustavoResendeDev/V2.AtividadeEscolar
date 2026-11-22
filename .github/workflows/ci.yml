@@ -19,5 +19,11 @@ jobs:
         run: npm test
       - name: Instala o navegador para o teste de ponta a ponta
         run: npm i --no-save playwright@1.63.0 && npx playwright install --with-deps chromium
-      - name: Teste de ponta a ponta
+      - name: Teste de ponta a ponta (código-fonte)
         run: npm run test:e2e
+      - name: Monta o site publicado (minificado e versionado)
+        run: node scripts/montar-site.mjs
+      - name: Teste de ponta a ponta (site montado, igual ao de produção)
+        run: npm run test:e2e
+        env:
+          SITE_DIR: dist

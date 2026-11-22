@@ -4,7 +4,8 @@ Tudo no plano grátis, sem VPS.
 
 | Peça | Serviço | O que faz |
 | --- | --- | --- |
-| Site e API | Cloudflare Worker `nova-era-barbearia` | Entrega as páginas de `public/` e responde `/api/*`. Cron diário às 03:00 (anonimização LGPD). |
+| Site e API | Cloudflare Worker `nova-era-barbearia` | Entrega as páginas (montadas de `public/` em `dist/`) e responde `/api/*`. Cron diário às 03:00 (anonimização LGPD). |
+| Conexão com o banco | Cloudflare Hyperdrive `novaera-banco` | Mantém conexões abertas com a Supabase e as reaproveita entre requisições (cache de consultas desligado). |
 | Banco | Supabase, projeto **Nova Era Barbearia** | PostgreSQL. Tabelas com RLS ligado: a chave pública da Supabase não lê nada. |
 | E-mail | Resend | Avisa a barbearia de cada agendamento feito pelo site. |
 | Deploy | GitHub Actions `deploy.yml` | A cada push na `main`: testes, schema do banco e publicação do Worker. |
@@ -82,9 +83,22 @@ pg_restore --clean --if-exists --no-owner --no-privileges --schema=public -d "$S
 
 Teste antes num projeto Supabase separado sempre que possível: `--clean` apaga as tabelas atuais antes de recriar.
 
+## Desempenho
+
+- **API ao lado do banco:** `[placement]` no `wrangler.toml` roda a API em Oregon (aws us-west-2), onde está
+  a Supabase. Cada consulta leva poucos milissegundos; só a ida e volta do visitante até lá é longa.
+- **Hyperdrive:** conexões já abertas, sem o aperto de mão de TCP, TLS e senha a cada requisição.
+- **Catálogo em memória:** serviços e barbeiros ficam 60 s no Worker e 5 min no navegador.
+- **Site montado** (`npm run build`, que o `wrangler deploy` roda sozinho): CSS e JS minificados e com
+  `?v=<impressão digital>`, guardados por 1 ano no navegador; links internos sem `.html` (sem redirecionamento).
+- **Página inicial:** imagens de fundo e a capa do vídeo só depois do carregamento; o vídeo só perto da seção.
+
+**Trocou a senha do banco?** Atualize também o Hyperdrive:
+`npx wrangler hyperdrive update c6f4b18e379f44c6929a6081ba3ac76c --connection-string="<session pooler, porta 5432>"`.
+
 ## Limites do plano grátis (folgados para uma barbearia)
 
-- **Worker:** 100 mil requisições de API por dia; páginas e imagens não contam. 10 ms de CPU por
+- **Worker:** 100 mil requisições de API por dia; páginas e imagens não contam. **Hyperdrive:** 100 mil consultas por dia. 10 ms de CPU por
   requisição, por isso a senha é conferida dentro do Postgres (bcrypt do `pgcrypto`).
 - **Supabase:** 500 MB de banco. O projeto pausa após 7 dias sem uso; o backup diário já conta como uso.
 - **Resend:** 3 mil e-mails por mês, 100 por dia.

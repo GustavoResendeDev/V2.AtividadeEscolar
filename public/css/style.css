@@ -1575,3 +1575,12 @@ footer p {
     border: 1px solid ButtonText;
   }
 }
+
+/* Imagens de fundo grandes (cartões "Sobre", serviços e localização, ~600 KB): só depois que a página
+   abriu. script.js acrescenta .fundosLiberados no evento load; assim a imagem principal e os textos
+   chegam primeiro. Sem JavaScript, as imagens carregam normalmente. */
+html.js:not(.fundosLiberados) .cartao::before,
+html.js:not(.fundosLiberados) .servicos,
+html.js:not(.fundosLiberados) #local .localSticky {
+  background-image: none;
+}

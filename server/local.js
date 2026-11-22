@@ -7,30 +7,26 @@ const { serveStatic } = require("@hono/node-server/serve-static");
 const { getConnInfo } = require("@hono/node-server/conninfo");
 const { criarApp } = require("./app");
 
-const PASTA_PUBLICA = path.join(__dirname, "..", "public");
-const PASTA_RELATIVA = path.relative(process.cwd(), PASTA_PUBLICA) || ".";
+// SITE_DIR=dist serve o site montado (minificado e versionado), igual ao publicado; o padrão é public/.
+const PASTA_PUBLICA = path.resolve(__dirname, "..", process.env.SITE_DIR || "public");
 
 function arquivosEstaticos() {
+  // Igual à Cloudflare: "/" e "/admin/" servem index.html; "/agendamento" serve agendamento.html.
   const servir = serveStatic({
-    root: PASTA_RELATIVA,
-    rewriteRequestPath: (p) => (p.endsWith("/") ? `${p}index.html` : p),
+    root: path.relative(process.cwd(), PASTA_PUBLICA) || ".",
+    rewriteRequestPath(p) {
+      if (p.endsWith("/")) return `${p}index.html`;
+      if (!path.extname(p) && fs.existsSync(path.join(PASTA_PUBLICA, `${p}.html`))) return `${p}.html`;
+      return p;
+    },
     onFound(caminho, c) {
       if (/\.(webp|png|woff2|mp4)$/.test(caminho)) c.header("Cache-Control", "public, max-age=604800");
     },
   });
   // Arquivos de configuração da Cloudflare (_headers etc.) não são servidos, igual em produção.
-  const bloqueados = (c) => /\/_[^/]*$/.test(c.req.path);
+  const bloqueado = (c) => /\/_[^/]*$/.test(c.req.path);
   return {
-    servir: async (c, next) => {
-      if (bloqueados(c)) return next();
-      const r = await servir(c, next);
-      if (r || c.finalized) return r;
-      // /agendamento -> agendamento.html, como na Cloudflare
-      if (!path.extname(c.req.path) && fs.existsSync(path.join(PASTA_PUBLICA, `${c.req.path}.html`))) {
-        return c.redirect(`${c.req.path}.html${new URL(c.req.url).search}`, 307);
-      }
-      return next();
-    },
+    servir: async (c, next) => (bloqueado(c) ? next() : servir(c, next)),
     pagina404: fs.readFileSync(path.join(PASTA_PUBLICA, "404.html"), "utf8"),
   };
 }

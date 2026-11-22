@@ -12,11 +12,20 @@ function interfaceDe(executar) {
   };
 }
 
-/* `prepare: false` é exigido pelo pooler da Supabase em modo transação (porta 6543). */
-function bancoPostgres(urlConexao) {
+/* Produção usa o Hyperdrive da Cloudflare (conexões com a Supabase já abertas e reaproveitadas).
+   `prepare: false` mantém compatível também com o pooler da Supabase em modo transação (porta 6543).
+   `fetch_types: false` evita uma consulta extra a cada conexão nova (não usamos tipos personalizados). */
+function bancoPostgres(urlConexao, { maxConexoes = 1 } = {}) {
   const modulo = require("postgres");
   const postgres = modulo.default || modulo; // no Worker vem como módulo ESM
-  const sql = postgres(urlConexao, { prepare: false, max: 1, idle_timeout: 5, connect_timeout: 10, onnotice: () => {} });
+  const sql = postgres(urlConexao, {
+    prepare: false,
+    fetch_types: false,
+    max: maxConexoes,
+    idle_timeout: 5,
+    connect_timeout: 10,
+    onnotice: () => {},
+  });
   const db = interfaceDe((texto, params) => sql.unsafe(texto, params));
   db.transacao = (fn) => sql.begin((t) => fn(interfaceDe((texto, params) => t.unsafe(texto, params))));
   db.executarScript = (texto) => sql.unsafe(texto);

@@ -70,6 +70,9 @@ document.addEventListener("DOMContentLoaded", async () => {
   const mostrarAviso = (texto) => mostrarErro(aviso, texto);
 
   // ---------- Sessão ----------
+  // Sessão e catálogo saem juntos (uma espera só em vez de duas seguidas).
+  const catalogoPronto = Promise.all([api("/api/barbeiros"), api("/api/servicos")]);
+  catalogoPronto.catch(() => {}); // o erro, se houver, aparece no await abaixo
   let usuario;
   try {
     usuario = await api("/api/admin/me");
@@ -84,7 +87,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     location.replace("index.html");
   });
 
-  const [todosBarbeiros, servicos] = await Promise.all([api("/api/barbeiros"), api("/api/servicos")]);
+  const [todosBarbeiros, servicos] = await catalogoPronto;
   // Cada barbeiro ganha uma cor fixa no calendário (pela ordem do cadastro).
   const corDoBarbeiro = (id) => `var(--barbeiro-${(todosBarbeiros.findIndex((b) => b.id === id) % 6) + 1})`;
   const meusBarbeiros = ehAdmin ? todosBarbeiros : todosBarbeiros.filter((b) => b.id === usuario.barbeiro_id);

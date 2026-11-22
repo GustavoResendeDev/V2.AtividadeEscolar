@@ -95,7 +95,7 @@ test("cliente agenda e o barbeiro confirma no painel", { skip: !playwright && "P
   await pagina.waitForSelector("#erroLogin:not([hidden])");
   await pagina.fill("#senha", SENHA);
   await pagina.click(".botaoEnviar");
-  await pagina.waitForURL(/painel\.html/);
+  await pagina.waitForURL(/painel(\.html)?$/);
 
   // 4. Painel (lista): encontra o atendimento e confirma
   await pagina.goto(`${base}/admin/painel.html?data=${DATA}&modo=dia&aba=lista`);
@@ -168,7 +168,7 @@ test("cliente agenda e o barbeiro confirma no painel", { skip: !playwright && "P
 
   // 9. Sair encerra a sessão
   await pagina.click("#sair");
-  await pagina.waitForURL(/admin\/(index\.html)?$/);
+  await pagina.waitForURL(/admin\/(index(\.html)?)?$/);
 
   // O 401 da senha errada é esperado; nenhum outro erro pode aparecer.
   const inesperados = erros.filter((e) => !/401/.test(e));

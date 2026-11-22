@@ -9,3 +9,6 @@ backups/
 test-results/
 .DS_Store
 .vscode/
+.wrangler/
+.dev.vars
+_site/

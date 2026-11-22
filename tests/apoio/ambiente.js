@@ -1,7 +1,7 @@
-/* Utilitários de teste: banco em memória, relógio fixo e servidor HTTP em porta livre. */
-const { abrirBanco } = require("../../server/db");
-const { criarApp } = require("../../server/app");
-const { criarUsuario } = require("../../server/usuarios");
+/* Utilitários de teste: banco PGlite em memória, relógio fixo e servidor HTTP em porta livre. */
+const { bancoLocal } = require("../../server/banco-local");
+const { criarAppLocal, iniciar } = require("../../server/local");
+const { criarUsuario } = require("../../server/auth");
 
 // Quarta-feira, 18/11/2026, 10h00 em Brasília (13h00 UTC).
 const AGORA_PADRAO = "2026-11-18T13:00:00Z";
@@ -15,20 +15,20 @@ function relogio(iso = AGORA_PADRAO) {
   return agora;
 }
 
-function bancoDeTeste() {
-  const db = abrirBanco(":memory:");
-  criarUsuario(db, { nome: "Admin", email: "admin@teste.com", senha: SENHA, papel: "admin" });
-  criarUsuario(db, { nome: "Rafael Moura", email: "rafael@teste.com", senha: SENHA, papel: "barbeiro", barbeiroId: 1 });
+async function bancoDeTeste({ barbeiro = true } = {}) {
+  const db = await bancoLocal();
+  await criarUsuario(db, { nome: "Admin", email: "admin@teste.com", senha: SENHA, papel: "admin" });
+  if (barbeiro)
+    await criarUsuario(db, { nome: "Rafael Moura", email: "rafael@teste.com", senha: SENHA, papel: "barbeiro", barbeiroId: 1 });
   return db;
 }
 
-async function subirServidor({ agora = relogio() } = {}) {
-  const db = bancoDeTeste();
-  const app = criarApp({ db, agora, log: logMudo });
-  const servidor = await new Promise((ok) => {
-    const s = app.listen(0, () => ok(s));
-  });
-  const base = `http://127.0.0.1:${servidor.address().port}`;
+/* Sobe o sistema completo (API + páginas) com um banco novo. `agora: null` usa o relógio real (testes no navegador). */
+async function subirServidor({ agora = relogio(), barbeiro = true } = {}) {
+  const db = await bancoDeTeste({ barbeiro });
+  const app = criarAppLocal({ banco: db, log: logMudo, ...(agora ? { agora } : {}) });
+  const http = await iniciar(app, 0);
+  const base = `http://127.0.0.1:${http.porta}`;
 
   async function req(metodo, caminho, { corpo, cookie, cabecalhos = {} } = {}) {
     const resposta = await fetch(base + caminho, {
@@ -39,6 +39,7 @@ async function subirServidor({ agora = relogio() } = {}) {
         ...cabecalhos,
       },
       body: corpo !== undefined ? JSON.stringify(corpo) : undefined,
+      redirect: "manual",
     });
     const texto = await resposta.text();
     let json = null;
@@ -55,7 +56,10 @@ async function subirServidor({ agora = relogio() } = {}) {
     return r.headers.get("set-cookie")?.split(";")[0];
   }
 
-  const fechar = () => new Promise((ok) => servidor.close(() => (db.close(), ok())));
+  const fechar = async () => {
+    await http.fechar();
+    await db.fechar();
+  };
   return { base, db, agora, req, login, fechar };
 }
 

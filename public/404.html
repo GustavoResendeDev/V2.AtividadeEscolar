@@ -6,8 +6,10 @@
     <meta name="theme-color" content="#0e0e0e" />
     <meta name="robots" content="noindex" />
     <title>Página não encontrada | Nova Era Barbearia</title>
-    <!-- Caminhos relativos: funcionam abrindo o arquivo direto. No servidor, o app.js acrescenta
-         <base href="/"> para eles continuarem certos em qualquer endereço que não existe. -->
+    <!-- A Cloudflare entrega esta página em qualquer endereço que não existe (/a/b/c):
+         o <base> faz os caminhos relativos abaixo apontarem sempre para a raiz do site.
+         No GitHub Pages, pages/build.mjs troca "/" pelo endereço do projeto. -->
+    <base href="/" />
     <link rel="icon" type="image/png" sizes="64x64" href="image/favicon-64.png" />
     <link rel="preload" href="fonts/oswald-latin.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="stylesheet" href="css/fontes.css" />

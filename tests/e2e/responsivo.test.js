@@ -2,10 +2,7 @@
    e os botões e campos principais precisam ter área de toque de pelo menos 44px no celular. */
 const { test, before, after } = require("node:test");
 const assert = require("node:assert/strict");
-const { abrirBanco } = require("../../server/db");
-const { criarApp } = require("../../server/app");
-const { criarUsuario } = require("../../server/usuarios");
-const { logMudo, SENHA } = require("../apoio/ambiente");
+const { subirServidor, SENHA } = require("../apoio/ambiente");
 
 let playwright = null;
 try {
@@ -28,17 +25,12 @@ const APARELHOS = [
 
 const PAGINAS = ["/", "/agendamento.html", "/privacidade.html", "/admin/", "/admin/painel.html", "/pagina-que-nao-existe"];
 
-let servidor, base, navegador, db, cookieSessao;
+let servidor, base, navegador, cookieSessao;
 
 before(async () => {
   if (!playwright) return;
-  db = abrirBanco(":memory:");
-  criarUsuario(db, { nome: "Admin", email: "admin@teste.com", senha: SENHA, papel: "admin" });
-  const app = criarApp({ db, log: logMudo });
-  servidor = await new Promise((ok) => {
-    const s = app.listen(0, () => ok(s));
-  });
-  base = `http://127.0.0.1:${servidor.address().port}`;
+  servidor = await subirServidor({ agora: null, barbeiro: false });
+  base = servidor.base;
   const login = await fetch(`${base}/api/admin/login`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -51,8 +43,7 @@ before(async () => {
 
 after(async () => {
   await navegador?.close();
-  await new Promise((ok) => (servidor ? servidor.close(ok) : ok()));
-  db?.close();
+  await servidor?.fechar();
 });
 
 for (const aparelho of APARELHOS) {

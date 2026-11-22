@@ -1,13 +1,13 @@
-/* Aplicação web: entrega as páginas (pasta public/) e a API REST em /api. */
-const fs = require("node:fs");
-const path = require("node:path");
-const express = require("express");
+/* API REST em /api (Hono). Roda igual no Cloudflare Worker (produção) e no Node (npm start e testes).
+   No Worker, as páginas de public/ são entregues direto pela Cloudflare (static assets) e só /api/*
+   chega aqui; no Node, server/local.js acrescenta os arquivos estáticos. */
+const { Hono } = require("hono");
 const { criarAuth, criarLimitador } = require("./auth");
 const { criarAgenda, ErroNegocio } = require("./agenda");
 
-const PASTA_PUBLICA = path.join(__dirname, "..", "public");
 const WHATSAPP_BARBEARIA = "5562993548184";
 
+// Os mesmos cabeçalhos estão em public/_headers, que a Cloudflare aplica às páginas (um teste confere).
 const CSP = [
   "default-src 'self'",
   "img-src 'self' data:",
@@ -21,6 +21,14 @@ const CSP = [
   "form-action 'self'",
   "frame-ancestors 'none'",
 ].join("; ");
+
+const CABECALHOS_SEGURANCA = {
+  "Content-Security-Policy": CSP,
+  "X-Content-Type-Options": "nosniff",
+  "Referrer-Policy": "strict-origin-when-cross-origin",
+  "X-Frame-Options": "DENY",
+  "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
+};
 
 function formatarDataBR(iso) {
   const [ano, mes, dia] = iso.split("-").map(Number);
@@ -51,56 +59,87 @@ function mensagemParaBarbearia(a) {
 
 const linkWhatsapp = (numero, texto) => `https://wa.me/${numero}?text=${encodeURIComponent(texto)}`;
 
-function criarApp({ db, producao = false, agora = () => new Date(), log = console } = {}) {
-  const app = express();
-  const agenda = criarAgenda(db, { agora });
-  const auth = criarAuth(db, { producao, agora: () => agora().getTime() });
-  const limitador = criarLimitador({ agora: () => agora().getTime() });
+const LIMITE_CORPO = 10 * 1024;
 
-  app.disable("x-powered-by");
-  if (producao) app.set("trust proxy", 1);
+/**
+ * @param banco    o banco (server/banco.js) ou uma função (c) => banco, para abrir um por requisição
+ * @param aoCriarAgendamento  chamado depois de um agendamento pelo site (aviso por e-mail no Worker)
+ * @param estaticos  só no Node: { servir: middleware, pagina404: html }
+ */
+function criarApp({
+  banco,
+  producao = false,
+  agora = () => new Date(),
+  log = console,
+  aoCriarAgendamento = null,
+  estaticos = null,
+  ipDe = () => null,
+} = {}) {
+  const app = new Hono();
 
   // Cabeçalhos de segurança em todas as respostas.
-  app.use((req, res, next) => {
-    res.setHeader("Content-Security-Policy", CSP);
-    res.setHeader("X-Content-Type-Options", "nosniff");
-    res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
-    res.setHeader("X-Frame-Options", "DENY");
-    res.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
-    if (producao) res.setHeader("Strict-Transport-Security", "max-age=31536000");
-    next();
+  app.use(async (c, next) => {
+    await next();
+    for (const [nome, valor] of Object.entries(CABECALHOS_SEGURANCA)) c.res.headers.set(nome, valor);
+    if (producao) c.res.headers.set("Strict-Transport-Security", "max-age=31536000");
   });
 
-  const api = express.Router();
-  api.use(express.json({ limit: "10kb" }));
-  api.use((req, res, next) => {
-    res.setHeader("Cache-Control", "no-store");
+  // Erros: regras de negócio viram mensagens claras; o resto vira 500 sem detalhes internos.
+  const tratarErro = (erro, c) => {
+    if (erro instanceof ErroNegocio) return c.json({ erro: erro.message, campo: erro.campo }, erro.status);
+    log.error?.(erro);
+    return c.json({ erro: "Erro interno. Tente novamente em instantes." }, 500);
+  };
+  app.onError(tratarErro);
+
+  const api = new Hono();
+  api.onError(tratarErro);
+
+  // Serviços por requisição (no Worker, cada requisição tem a própria conexão com o banco).
+  api.use(async (c, next) => {
+    const db = typeof banco === "function" ? banco(c) : banco;
+    const relogioMs = () => agora().getTime();
+    c.set("agenda", criarAgenda(db, { agora }));
+    c.set("auth", criarAuth(db, { producao, agora: relogioMs }));
+    c.set("limitador", criarLimitador(db, { agora: relogioMs }));
+
     // Escritas só aceitam JSON: um formulário de outro site não consegue enviar JSON sem CORS.
-    if (!["GET", "HEAD"].includes(req.method) && !req.is("application/json"))
-      return res.status(415).json({ erro: "Envie os dados em JSON." });
-    next();
+    if (!["GET", "HEAD"].includes(c.req.method)) {
+      if (!/^application\/json\b/i.test(c.req.header("content-type") || ""))
+        return c.json({ erro: "Envie os dados em JSON." }, 415, { "Cache-Control": "no-store" });
+      const texto = await c.req.text();
+      if (texto.length > LIMITE_CORPO) return c.json({ erro: "Dados grandes demais." }, 413);
+      try {
+        const corpo = texto ? JSON.parse(texto) : {};
+        c.set("corpo", corpo && typeof corpo === "object" ? corpo : {});
+      } catch {
+        return c.json({ erro: "JSON inválido." }, 400, { "Cache-Control": "no-store" });
+      }
+    }
+    await next();
+    c.res.headers.set("Cache-Control", "no-store");
   });
 
   // ---------- Rotas públicas ----------
-  api.get("/saude", (req, res) => res.json({ ok: true }));
+  api.get("/saude", (c) => c.json({ ok: true }));
 
-  api.get("/servicos", (req, res) => res.json(agenda.listarServicos()));
+  api.get("/servicos", async (c) => c.json(await c.get("agenda").listarServicos()));
 
-  api.get("/barbeiros", (req, res) => res.json(agenda.listarBarbeiros()));
+  api.get("/barbeiros", async (c) => c.json(await c.get("agenda").listarBarbeiros()));
 
-  api.get("/disponibilidade", (req, res) => {
+  api.get("/disponibilidade", async (c) => {
     // ?servicos=1,7 (vários) ou ?servico=1 (um só)
-    const { data, servico, servicos, barbeiro } = req.query;
+    const { data, servico, servicos, barbeiro } = c.req.query();
     const servicoIds = servicos ? String(servicos).split(",") : null;
-    res.json({
-      data,
-      horarios: agenda.disponibilidade({ data, servicoId: servico, servicoIds, barbeiroId: barbeiro || null }),
-    });
+    const horarios = await c
+      .get("agenda")
+      .disponibilidade({ data, servicoId: servico, servicoIds, barbeiroId: barbeiro || null });
+    return c.json({ data, horarios });
   });
 
-  api.post("/agendamentos", (req, res) => {
-    const b = req.body || {};
-    const agendamento = agenda.criarAgendamento({
+  api.post("/agendamentos", async (c) => {
+    const b = c.get("corpo");
+    const agendamento = await c.get("agenda").criarAgendamento({
       nome: b.nome,
       telefone: b.telefone,
       servicoId: b.servicoId,
@@ -111,65 +150,79 @@ function criarApp({ db, producao = false, agora = () => new Date(), log = consol
       consentimento: b.consentimento,
     });
     log.info?.(`Agendamento ${agendamento.codigo} criado para ${agendamento.data} ${agendamento.hora}.`);
-    res.status(201).json({
-      codigo: agendamento.codigo,
-      data: agendamento.data,
-      hora: agendamento.hora,
-      termino: agendamento.termino,
-      preco: agendamento.preco,
-      servico: agendamento.servico.nome,
-      barbeiro: agendamento.barbeiro.nome,
-      whatsapp: linkWhatsapp(WHATSAPP_BARBEARIA, mensagemParaBarbearia(agendamento)),
-    });
+    if (aoCriarAgendamento) aoCriarAgendamento(agendamento, c);
+    return c.json(
+      {
+        codigo: agendamento.codigo,
+        data: agendamento.data,
+        hora: agendamento.hora,
+        termino: agendamento.termino,
+        preco: agendamento.preco,
+        servico: agendamento.servico.nome,
+        barbeiro: agendamento.barbeiro.nome,
+        whatsapp: linkWhatsapp(WHATSAPP_BARBEARIA, mensagemParaBarbearia(agendamento)),
+      },
+      201
+    );
   });
 
   // ---------- Painel (exige login) ----------
-  api.post("/admin/login", (req, res) => {
-    const chave = req.ip;
-    const espera = limitador.bloqueado(chave);
-    if (espera) {
-      res.setHeader("Retry-After", String(espera));
-      return res.status(429).json({ erro: "Muitas tentativas. Aguarde alguns minutos e tente de novo." });
+  api.post("/admin/login", async (c) => {
+    const limitador = c.get("limitador");
+    const chave = c.req.header("cf-connecting-ip") || ipDe(c) || "local";
+    const espera = await limitador.bloqueado(chave);
+    if (espera)
+      return c.json({ erro: "Muitas tentativas. Aguarde alguns minutos e tente de novo." }, 429, {
+        "Retry-After": String(espera),
+      });
+    const corpo = c.get("corpo");
+    const sessao = await c.get("auth").entrar(corpo.email, corpo.senha);
+    if (!sessao) {
+      await limitador.falhou(chave);
+      return c.json({ erro: "E-mail ou senha incorretos." }, 401);
     }
-    const usuario = auth.entrar(res, req.body?.email, req.body?.senha);
-    if (!usuario) {
-      limitador.falhou(chave);
-      return res.status(401).json({ erro: "E-mail ou senha incorretos." });
-    }
-    limitador.limpar(chave);
-    res.json(usuario);
+    await limitador.limpar(chave);
+    return c.json(sessao.usuario, 200, { "Set-Cookie": sessao.cookie });
   });
 
   // Consulta de sessão sem erro: o login usa para saber se já pode ir direto à agenda.
-  api.get("/sessao", (req, res) => res.json({ usuario: auth.usuarioDaSessao(req) }));
+  api.get("/sessao", async (c) => c.json({ usuario: await c.get("auth").usuarioDaSessao(c.req.header("cookie")) }));
 
-  api.post("/admin/logout", (req, res) => {
-    auth.sair(req, res);
-    res.status(204).end();
+  api.post("/admin/logout", async (c) => {
+    const cookie = await c.get("auth").sair(c.req.header("cookie"));
+    return c.body(null, 204, { "Set-Cookie": cookie });
   });
 
-  api.use("/admin", auth.exigirLogin);
+  api.use("/admin/*", async (c, next) => {
+    const usuario = await c.get("auth").usuarioDaSessao(c.req.header("cookie"));
+    if (!usuario) return c.json({ erro: "Faça login para continuar." }, 401);
+    c.set("usuario", usuario);
+    await next();
+  });
 
   // Barbeiro vê só a própria agenda; administrador vê todas (e pode filtrar).
-  const barbeiroDoFiltro = (req) =>
-    req.usuario.papel === "barbeiro" ? req.usuario.barbeiro_id : req.query.barbeiro || null;
+  const barbeiroDoFiltro = (c) => {
+    const usuario = c.get("usuario");
+    return usuario.papel === "barbeiro" ? usuario.barbeiro_id : c.req.query("barbeiro") || null;
+  };
 
-  api.get("/admin/me", (req, res) => res.json(req.usuario));
+  api.get("/admin/me", (c) => c.json(c.get("usuario")));
 
   // Lista de um dia (?data=) ou de um período (?inicio=&fim=), com o resumo do mesmo recorte.
-  api.get("/admin/agendamentos", (req, res) => {
-    const { data, inicio, fim } = req.query;
-    const filtro = { data, inicio, fim, barbeiroId: barbeiroDoFiltro(req) };
-    res.json({
-      agendamentos: agenda.listar({ ...filtro, status: req.query.status || null }),
-      resumo: agenda.resumo(filtro),
-    });
+  api.get("/admin/agendamentos", async (c) => {
+    const agenda = c.get("agenda");
+    const { data, inicio, fim, status } = c.req.query();
+    const filtro = { data, inicio, fim, barbeiroId: barbeiroDoFiltro(c) };
+    const todos = await agenda.listar(filtro);
+    const agendamentos = status ? await agenda.listar({ ...filtro, status }) : todos;
+    return c.json({ agendamentos, resumo: agenda.resumoDe(todos) });
   });
 
   // Agendamento manual feito pela equipe.
-  api.post("/admin/agendamentos", (req, res) => {
-    const b = req.body || {};
-    const criado = agenda.criarManual(
+  api.post("/admin/agendamentos", async (c) => {
+    const b = c.get("corpo");
+    const usuario = c.get("usuario");
+    const criado = await c.get("agenda").criarManual(
       {
         nome: b.nome,
         telefone: b.telefone,
@@ -180,57 +233,39 @@ function criarApp({ db, producao = false, agora = () => new Date(), log = consol
         hora: b.hora,
         status: b.status,
       },
-      req.usuario
+      usuario
     );
-    log.info?.(`Agendamento manual ${criado.codigo} para ${criado.data} ${criado.hora} (usuário ${req.usuario.id}).`);
-    res.status(201).json(criado);
+    log.info?.(`Agendamento manual ${criado.codigo} para ${criado.data} ${criado.hora} (usuário ${usuario.id}).`);
+    return c.json(criado, 201);
   });
 
-  api.patch("/admin/agendamentos/:id", (req, res) => {
-    res.json(agenda.mudarStatus(req.params.id, req.body?.status, req.usuario));
-  });
+  api.patch("/admin/agendamentos/:id", async (c) =>
+    c.json(await c.get("agenda").mudarStatus(c.req.param("id"), c.get("corpo").status, c.get("usuario")))
+  );
 
   // Remarcação: arrastar o atendimento para outra data, horário ou barbeiro.
-  api.patch("/admin/agendamentos/:id/horario", (req, res) => {
-    const b = req.body || {};
-    res.json(agenda.remarcar(req.params.id, { data: b.data, hora: b.hora, barbeiroId: b.barbeiroId }, req.usuario));
+  api.patch("/admin/agendamentos/:id/horario", async (c) => {
+    const b = c.get("corpo");
+    const destino = { data: b.data, hora: b.hora, barbeiroId: b.barbeiroId };
+    return c.json(await c.get("agenda").remarcar(c.req.param("id"), destino, c.get("usuario")));
   });
 
   // Quantas pessoas cada barbeiro atendeu no período.
-  api.get("/admin/relatorio", (req, res) => {
-    res.json(agenda.relatorio({ inicio: req.query.inicio, fim: req.query.fim, barbeiroId: barbeiroDoFiltro(req) }));
+  api.get("/admin/relatorio", async (c) => {
+    const { inicio, fim } = c.req.query();
+    return c.json(await c.get("agenda").relatorio({ inicio, fim, barbeiroId: barbeiroDoFiltro(c) }));
   });
 
-  api.use((req, res) => res.status(404).json({ erro: "Rota não encontrada." }));
+  api.all("*", (c) => c.json({ erro: "Rota não encontrada." }, 404));
 
-  app.use("/api", api);
+  app.route("/api", api);
 
-  app.use(
-    express.static(PASTA_PUBLICA, {
-      extensions: ["html"],
-      setHeaders(res, caminho) {
-        if (/\.(webp|png|woff2|mp4)$/.test(caminho)) res.setHeader("Cache-Control", "public, max-age=604800");
-      },
-    })
-  );
-
-  // Página 404: o <base href="/"> faz os caminhos relativos dela valerem em qualquer profundidade (/a/b/c).
-  const pagina404 = fs
-    .readFileSync(path.join(PASTA_PUBLICA, "404.html"), "utf8")
-    .replace("<head>", '<head>\n    <base href="/" />');
-  app.use((req, res) => res.status(404).type("html").send(pagina404));
-
-  // Erros: regras de negócio viram mensagens claras; o resto vira 500 sem detalhes internos.
-  // eslint-disable-next-line no-unused-vars
-  app.use((erro, req, res, next) => {
-    if (erro instanceof ErroNegocio) return res.status(erro.status).json({ erro: erro.message, campo: erro.campo });
-    if (erro.type === "entity.parse.failed") return res.status(400).json({ erro: "JSON inválido." });
-    if (erro.type === "entity.too.large") return res.status(413).json({ erro: "Dados grandes demais." });
-    log.error?.(erro);
-    res.status(500).json({ erro: "Erro interno. Tente novamente em instantes." });
-  });
+  if (estaticos) {
+    app.use("*", estaticos.servir);
+    app.notFound((c) => c.html(estaticos.pagina404, 404));
+  }
 
   return app;
 }
 
-module.exports = { criarApp, mensagemParaBarbearia };
+module.exports = { criarApp, mensagemParaBarbearia, CABECALHOS_SEGURANCA };

@@ -10,6 +10,7 @@ const BASE = process.env.PAGES_BASE || "/"; // ex.: /V2.AtividadeEscolar/
 rmSync(SAIDA, { recursive: true, force: true });
 cpSync("public", SAIDA, { recursive: true });
 cpSync("pages/api-demo.js", join(SAIDA, "js", "api-demo.js"));
+rmSync(join(SAIDA, "_headers")); // só serve para a Cloudflare
 
 const paginas = (pasta) =>
   readdirSync(pasta).flatMap((n) => {
@@ -24,7 +25,8 @@ for (const arquivo of paginas(SAIDA)) {
   if (arquivo.endsWith("404.html")) {
     // A 404 é servida em qualquer endereço: o <base> faz os caminhos relativos apontarem para o site.
     html = html.replace(/(href|src)="\/(?!\/)/g, `$1="${BASE}`);
-    html = html.replace("<head>", `<head>\n    <base href="${BASE}" />\n    <script src="${BASE}js/api-demo.js"></script>`);
+    // (o <base href="/"> da página também é ajustado pela linha acima)
+    html = html.replace("<head>", `<head>\n    <script src="${BASE}js/api-demo.js"></script>`);
   } else {
     html = html.replace("<head>", `<head>\n    <script src="${caminho}"></script>`);
   }

@@ -1,9 +1,8 @@
-/* Cria ou atualiza um usuário do painel.
-   Uso: npm run usuario -- --nome "Ana" --email ana@novaera.com.br --senha "senhaForte123" [--papel barbeiro --barbeiro 2] */
+/* Cria ou atualiza um usuário do painel no banco da Supabase.
+   Uso: DATABASE_URL=... npm run usuario -- --nome "Ana" --email ana@novaera.com.br --senha "senhaForte123" [--papel barbeiro --barbeiro 2] */
 const { parseArgs } = require("node:util");
-const config = require("../server/config");
-const { abrirBanco } = require("../server/db");
-const { criarUsuario } = require("../server/usuarios");
+const { bancoPostgres } = require("../server/banco");
+const { criarUsuario } = require("../server/auth");
 
 const { values } = parseArgs({
   options: {
@@ -15,12 +14,19 @@ const { values } = parseArgs({
   },
 });
 
-try {
-  const db = abrirBanco(config.caminhoBanco);
-  const usuario = criarUsuario(db, { ...values, barbeiroId: values.barbeiro ? Number(values.barbeiro) : null });
-  console.info("Usuário salvo:", usuario);
-  db.close();
-} catch (erro) {
-  console.error("Não foi possível salvar o usuário:", erro.message);
-  process.exit(1);
-}
+(async () => {
+  if (!process.env.DATABASE_URL) {
+    console.error("Defina DATABASE_URL (string de conexão da Supabase).");
+    process.exit(1);
+  }
+  const db = bancoPostgres(process.env.DATABASE_URL);
+  try {
+    const usuario = await criarUsuario(db, { ...values, barbeiroId: values.barbeiro ? Number(values.barbeiro) : null });
+    console.info("Usuário salvo:", usuario);
+  } catch (erro) {
+    console.error("Não foi possível salvar o usuário:", erro.message);
+    process.exitCode = 1;
+  } finally {
+    await db.fechar();
+  }
+})();

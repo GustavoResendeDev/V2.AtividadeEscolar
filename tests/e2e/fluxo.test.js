@@ -4,10 +4,7 @@
 const { test, before, after } = require("node:test");
 const assert = require("node:assert/strict");
 const regras = require("../../public/js/regras.js");
-const { abrirBanco } = require("../../server/db");
-const { criarApp } = require("../../server/app");
-const { criarUsuario } = require("../../server/usuarios");
-const { logMudo, SENHA } = require("../apoio/ambiente");
+const { subirServidor, SENHA } = require("../apoio/ambiente");
 
 let playwright = null;
 try {
@@ -23,25 +20,19 @@ function proximoDiaAberto() {
   return data;
 }
 
-let servidor, base, navegador, db;
+let servidor, base, navegador;
 const DATA = proximoDiaAberto();
 
 before(async () => {
   if (!playwright) return;
-  db = abrirBanco(":memory:");
-  criarUsuario(db, { nome: "Admin", email: "admin@teste.com", senha: SENHA, papel: "admin" });
-  const app = criarApp({ db, log: logMudo });
-  servidor = await new Promise((ok) => {
-    const s = app.listen(0, () => ok(s));
-  });
-  base = `http://127.0.0.1:${servidor.address().port}`;
+  servidor = await subirServidor({ agora: null, barbeiro: false });
+  base = servidor.base;
   navegador = await playwright.chromium.launch();
 });
 
 after(async () => {
   await navegador?.close();
-  await new Promise((ok) => (servidor ? servidor.close(ok) : ok()));
-  db?.close();
+  await servidor?.fechar();
 });
 
 test("cliente agenda e o barbeiro confirma no painel", { skip: !playwright && "Playwright não instalado" }, async () => {

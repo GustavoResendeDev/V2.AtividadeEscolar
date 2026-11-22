@@ -1,11 +1,10 @@
 /* Regras de negócio da agenda: horários livres, criação de agendamentos sem conflito,
-   mudança de status e anonimização de dados antigos (LGPD). */
-const crypto = require("node:crypto");
+   mudança de status e anonimização de dados antigos (LGPD). Banco: PostgreSQL (server/banco.js). */
 const regras = require("../public/js/regras.js");
-const { transacao } = require("./db");
 
 // Status que ocupam a cadeira do barbeiro. Cancelado libera o horário.
 const STATUS_OCUPAM = ["pendente", "confirmado", "concluido", "faltou"];
+const SQL_OCUPAM = STATUS_OCUPAM.map((s) => `'${s}'`).join(", ");
 
 // Para onde cada status pode ir (máquina de estados do atendimento).
 const TRANSICOES = {
@@ -42,34 +41,53 @@ function formatarTelefone(digitos) {
   return `(${ddd}) ${numero.slice(0, corte)}-${numero.slice(corte)}`;
 }
 
-const placeholders = (lista) => lista.map(() => "?").join(", ");
+// Código de 8 caracteres hexadecimais (ex.: 3F9A01BC) mostrado ao cliente.
+function gerarCodigo() {
+  const bytes = crypto.getRandomValues(new Uint8Array(4));
+  return Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("").toUpperCase();
+}
+
+// Id inteiro positivo vindo da URL ou do corpo; qualquer outra coisa vira null.
+const idValido = (valor) => {
+  const n = Number(valor);
+  return Number.isInteger(n) && n > 0 && n < 2 ** 31 ? n : null;
+};
+
+/* Trava a agenda de um dia até o fim da transação: dois clientes não conseguem
+   pegar o mesmo horário ao mesmo tempo, mesmo vindo de servidores diferentes. */
+const travarDia = (tx, data) => tx.query("SELECT pg_advisory_xact_lock(hashtext($1))", [`agenda:${data}`]);
 
 function criarAgenda(db, { agora = () => new Date() } = {}) {
-  const servicoAtivo = (id) =>
-    db.prepare("SELECT * FROM servicos WHERE id = ? AND ativo = 1").get(Number(id)) || null;
-  const barbeiroAtivo = (id) =>
-    db.prepare("SELECT * FROM barbeiros WHERE id = ? AND ativo = 1").get(Number(id)) || null;
+  async function servicosAtivos() {
+    return db.query(
+      "SELECT id, nome, categoria, duracao_min, preco_centavos FROM servicos WHERE ativo ORDER BY id"
+    );
+  }
 
-  function listarServicos() {
-    return db
-      .prepare(
-        "SELECT id, nome, categoria, duracao_min, preco_centavos FROM servicos WHERE ativo = 1 ORDER BY id"
-      )
-      .all();
+  const listarServicos = servicosAtivos;
+
+  async function listarBarbeiros(q = db) {
+    return q.query("SELECT id, nome, especialidade FROM barbeiros WHERE ativo ORDER BY id");
+  }
+
+  async function barbeiroAtivo(id, q = db) {
+    const n = idValido(id);
+    return n ? q.um("SELECT id, nome, especialidade FROM barbeiros WHERE id = $1 AND ativo", [n]) : null;
   }
 
   const MAX_SERVICOS = 5;
 
   /* Lista de serviços do pedido: aceita servicoIds (vários) ou servicoId (um só).
      Devolve os serviços na ordem escolhida, com a duração e o preço somados. */
-  function servicosDoPedido({ servicoIds, servicoId }) {
+  async function servicosDoPedido({ servicoIds, servicoId }) {
     let ids = Array.isArray(servicoIds) ? servicoIds : servicoId != null && servicoId !== "" ? [servicoId] : [];
     ids = [...new Set(ids.map(Number).filter((n) => Number.isInteger(n) && n > 0))];
     if (!ids.length) throw new ErroNegocio(422, "Escolha pelo menos um serviço.", "servico");
     if (ids.length > MAX_SERVICOS)
       throw new ErroNegocio(422, `Escolha no máximo ${MAX_SERVICOS} serviços por agendamento.`, "servico");
+    const ativos = new Map((await servicosAtivos()).map((s) => [s.id, s]));
     const lista = ids.map((id) => {
-      const servico = servicoAtivo(id);
+      const servico = ativos.get(id);
       if (!servico) throw new ErroNegocio(422, "Um dos serviços escolhidos não está disponível.", "servico");
       return servico;
     });
@@ -85,15 +103,14 @@ function criarAgenda(db, { agora = () => new Date() } = {}) {
     };
   }
 
-  function gravarServicos(agendamentoId, servicos) {
-    const ins = db.prepare(
-      "INSERT INTO agendamento_servicos (agendamento_id, servico_id, ordem, duracao_min, preco_centavos) VALUES (?, ?, ?, ?, ?)"
-    );
-    servicos.lista.forEach((s, i) => ins.run(agendamentoId, s.id, i + 1, s.duracao_min, s.preco_centavos));
-  }
-
-  function listarBarbeiros() {
-    return db.prepare("SELECT id, nome, especialidade FROM barbeiros WHERE ativo = 1 ORDER BY id").all();
+  async function gravarServicos(tx, agendamentoId, servicos) {
+    for (const [i, s] of servicos.lista.entries()) {
+      await tx.query(
+        `INSERT INTO agendamento_servicos (agendamento_id, servico_id, ordem, duracao_min, preco_centavos)
+         VALUES ($1, $2, $3, $4, $5)`,
+        [agendamentoId, s.id, i + 1, s.duracao_min, s.preco_centavos]
+      );
+    }
   }
 
   // Confere se a data pode receber agendamentos; lança ErroNegocio se não puder.
@@ -112,16 +129,22 @@ function criarAgenda(db, { agora = () => new Date() } = {}) {
     if (motivo) throw new ErroNegocio(422, motivo, "data");
   }
 
-  function ocupacoes(data, barbeiroId) {
-    return db
-      .prepare(
-        `SELECT inicio_min, fim_min FROM agendamentos
-          WHERE data = ? AND barbeiro_id = ? AND status IN (${placeholders(STATUS_OCUPAM)})`
-      )
-      .all(data, barbeiroId, ...STATUS_OCUPAM);
+  // Horários ocupados no dia, agrupados por barbeiro: Map(barbeiroId -> [{inicio_min, fim_min}]).
+  async function ocupacoesDoDia(q, data) {
+    const linhas = await q.query(
+      `SELECT barbeiro_id, inicio_min, fim_min FROM agendamentos WHERE data = $1 AND status IN (${SQL_OCUPAM})`,
+      [data]
+    );
+    const mapa = new Map();
+    for (const l of linhas) {
+      if (!mapa.has(l.barbeiro_id)) mapa.set(l.barbeiro_id, []);
+      mapa.get(l.barbeiro_id).push(l);
+    }
+    return mapa;
   }
 
-  const livre = (ocupados, inicio, fim) => !ocupados.some((o) => regras.sobrepoe(inicio, fim, o.inicio_min, o.fim_min));
+  const livre = (ocupados = [], inicio, fim) =>
+    !ocupados.some((o) => regras.sobrepoe(inicio, fim, o.inicio_min, o.fim_min));
 
   // Horário que já passou (hoje) não pode ser escolhido.
   function minutoMinimo(data) {
@@ -131,20 +154,21 @@ function criarAgenda(db, { agora = () => new Date() } = {}) {
 
   /* Horários de início do serviço na data. Com barbeiro, olha só a agenda dele;
      sem barbeiro ("sem preferência"), o horário está livre se algum barbeiro estiver livre. */
-  function disponibilidade({ data, servicoId, servicoIds, barbeiroId }) {
+  async function disponibilidade({ data, servicoId, servicoIds, barbeiroId }) {
     validarData(data);
-    const { duracao } = servicosDoPedido({ servicoIds, servicoId });
+    const { duracao } = await servicosDoPedido({ servicoIds, servicoId });
 
     let barbeiros;
     if (barbeiroId) {
-      const barbeiro = barbeiroAtivo(barbeiroId);
+      const barbeiro = await barbeiroAtivo(barbeiroId);
       if (!barbeiro) throw new ErroNegocio(422, "Escolha um barbeiro válido.", "barbeiro");
       barbeiros = [barbeiro];
     } else {
-      barbeiros = listarBarbeiros();
+      barbeiros = await listarBarbeiros();
     }
 
-    const agendas = barbeiros.map((b) => ocupacoes(data, b.id));
+    const ocupacoes = await ocupacoesDoDia(db, data);
+    const agendas = barbeiros.map((b) => ocupacoes.get(b.id) || []);
     const minimo = minutoMinimo(data);
     return regras
       .gradeDeHorarios(duracao)
@@ -155,7 +179,7 @@ function criarAgenda(db, { agora = () => new Date() } = {}) {
       }));
   }
 
-  function validarPedido(pedido) {
+  async function validarPedido(pedido) {
     const nome = String(pedido.nome || "").trim().replace(/\s+/g, " ");
     if (nome.length < 3) throw new ErroNegocio(422, "Informe seu nome (pelo menos 3 letras).", "nome");
     if (nome.length > 80) throw new ErroNegocio(422, "O nome pode ter no máximo 80 letras.", "nome");
@@ -164,7 +188,7 @@ function criarAgenda(db, { agora = () => new Date() } = {}) {
     if (pedido.consentimento !== true)
       throw new ErroNegocio(422, "Para agendar, aceite a Política de Privacidade.", "consentimento");
 
-    const servicos = servicosDoPedido(pedido);
+    const servicos = await servicosDoPedido(pedido);
     validarData(pedido.data);
 
     const inicio = regras.paraMinutos(pedido.hora);
@@ -180,69 +204,94 @@ function criarAgenda(db, { agora = () => new Date() } = {}) {
 
     let barbeiro = null;
     if (pedido.barbeiroId) {
-      barbeiro = barbeiroAtivo(pedido.barbeiroId);
+      barbeiro = await barbeiroAtivo(pedido.barbeiroId);
       if (!barbeiro) throw new ErroNegocio(422, "Escolha um barbeiro válido.", "barbeiro");
     }
     return { nome, telefone, servicos, barbeiro, inicio, fim, data: pedido.data };
   }
 
   // Sem preferência: o barbeiro livre com menos atendimentos no dia (divide o trabalho).
-  function escolherBarbeiro(data, inicio, fim) {
-    const candidatos = listarBarbeiros()
-      .map((b) => ({ ...b, ocupados: ocupacoes(data, b.id) }))
+  async function escolherBarbeiro(tx, data, inicio, fim) {
+    const ocupacoes = await ocupacoesDoDia(tx, data);
+    const candidatos = (await listarBarbeiros(tx))
+      .map((b) => ({ ...b, ocupados: ocupacoes.get(b.id) || [] }))
       .filter((b) => livre(b.ocupados, inicio, fim))
       .sort((a, b) => a.ocupados.length - b.ocupados.length || a.id - b.id);
     return candidatos[0] || null;
   }
 
-  function criarAgendamento(pedido) {
-    const p = validarPedido(pedido);
+  async function barbeiroLivre(tx, data, barbeiroId, inicio, fim, ignorarId = 0) {
+    const choque = await tx.um(
+      `SELECT 1 FROM agendamentos
+        WHERE data = $1 AND barbeiro_id = $2 AND id <> $3 AND status IN (${SQL_OCUPAM})
+          AND inicio_min < $4 AND $5 < fim_min
+        LIMIT 1`,
+      [data, barbeiroId, ignorarId, fim, inicio]
+    );
+    return !choque;
+  }
 
-    // Transação exclusiva: dois clientes não conseguem pegar o mesmo horário ao mesmo tempo.
-    return transacao(db, () => {
+  async function inserirAgendamento(tx, { clienteId, servicos, barbeiroId, data, inicio, fim, status, usuarioId }) {
+    const { id } = await tx.um(
+      `INSERT INTO agendamentos
+         (codigo, cliente_id, servico_id, barbeiro_id, data, inicio_min, fim_min, preco_centavos, status, consentimento_em)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, now())
+       RETURNING id`,
+      [gerarCodigo(), clienteId, servicos.lista[0].id, barbeiroId, data, inicio, fim, servicos.preco, status]
+    );
+    await gravarServicos(tx, id, servicos);
+    await tx.query("INSERT INTO historico_status (agendamento_id, de, para, usuario_id) VALUES ($1, NULL, $2, $3)", [
+      id,
+      status,
+      usuarioId,
+    ]);
+    return buscar(id, tx);
+  }
+
+  async function criarAgendamento(pedido) {
+    const p = await validarPedido(pedido);
+
+    return db.transacao(async (tx) => {
+      await travarDia(tx, p.data);
       let barbeiro = p.barbeiro;
       if (barbeiro) {
-        if (!livre(ocupacoes(p.data, barbeiro.id), p.inicio, p.fim))
+        if (!(await barbeiroLivre(tx, p.data, barbeiro.id, p.inicio, p.fim)))
           throw new ErroNegocio(409, "Esse horário acabou de ser reservado. Escolha outro.", "hora");
       } else {
-        barbeiro = escolherBarbeiro(p.data, p.inicio, p.fim);
+        barbeiro = await escolherBarbeiro(tx, p.data, p.inicio, p.fim);
         if (!barbeiro)
           throw new ErroNegocio(409, "Nenhum barbeiro está livre nesse horário. Escolha outro.", "hora");
       }
 
-      const cliente = db
-        .prepare(
-          `INSERT INTO clientes (nome, telefone) VALUES (?, ?)
-           ON CONFLICT (telefone) DO UPDATE SET nome = excluded.nome
-           RETURNING id`
-        )
-        .get(p.nome, p.telefone);
-
-      const codigo = crypto.randomBytes(4).toString("hex").toUpperCase();
-      const { id } = db
-        .prepare(
-          `INSERT INTO agendamentos
-             (codigo, cliente_id, servico_id, barbeiro_id, data, inicio_min, fim_min, preco_centavos, consentimento_em)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
-           RETURNING id`
-        )
-        .get(codigo, cliente.id, p.servicos.lista[0].id, barbeiro.id, p.data, p.inicio, p.fim, p.servicos.preco);
-      gravarServicos(id, p.servicos);
-      db.prepare("INSERT INTO historico_status (agendamento_id, de, para) VALUES (?, NULL, 'pendente')").run(id);
-      return buscar(id);
+      const cliente = await tx.um(
+        `INSERT INTO clientes (nome, telefone) VALUES ($1, $2)
+         ON CONFLICT (telefone) DO UPDATE SET nome = excluded.nome
+         RETURNING id`,
+        [p.nome, p.telefone]
+      );
+      return inserirAgendamento(tx, {
+        clienteId: cliente.id,
+        servicos: p.servicos,
+        barbeiroId: barbeiro.id,
+        data: p.data,
+        inicio: p.inicio,
+        fim: p.fim,
+        status: "pendente",
+        usuarioId: null,
+      });
     });
   }
 
   const SELECT_AGENDAMENTO = `
-    SELECT a.id, a.codigo, a.data, a.inicio_min, a.fim_min, a.preco_centavos, a.status, a.criado_em,
+    SELECT a.id, a.codigo, a.data, a.inicio_min, a.fim_min, a.preco_centavos, a.status,
            c.nome AS cliente_nome, c.telefone AS cliente_telefone,
            s.id AS servico_id,
            COALESCE(
-             (SELECT group_concat(s2.nome, ', ' ORDER BY x.ordem)
+             (SELECT string_agg(s2.nome, ', ' ORDER BY x.ordem)
                 FROM agendamento_servicos x JOIN servicos s2 ON s2.id = x.servico_id
                WHERE x.agendamento_id = a.id),
              s.nome) AS servico_nome,
-           (SELECT COUNT(*) FROM agendamento_servicos x WHERE x.agendamento_id = a.id) AS qtd_servicos,
+           (SELECT COUNT(*)::int FROM agendamento_servicos x WHERE x.agendamento_id = a.id) AS qtd_servicos,
            b.id AS barbeiro_id, b.nome AS barbeiro_nome
       FROM agendamentos a
       JOIN clientes  c ON c.id = a.cliente_id
@@ -259,14 +308,21 @@ function criarAgenda(db, { agora = () => new Date() } = {}) {
       termino: regras.paraHora(linha.fim_min),
       preco: linha.preco_centavos / 100,
       status: linha.status,
-      cliente: { nome: linha.cliente_nome, telefone: formatarTelefone(linha.cliente_telefone), whatsapp: linha.cliente_telefone ? `55${linha.cliente_telefone}` : null },
+      cliente: {
+        nome: linha.cliente_nome,
+        telefone: formatarTelefone(linha.cliente_telefone),
+        whatsapp: linha.cliente_telefone ? `55${linha.cliente_telefone}` : null,
+      },
       servico: { id: linha.servico_id, nome: linha.servico_nome, quantidade: Math.max(1, linha.qtd_servicos) },
       barbeiro: { id: linha.barbeiro_id, nome: linha.barbeiro_nome },
       proximosStatus: TRANSICOES[linha.status],
     };
   }
 
-  const buscar = (id) => formatar(db.prepare(`${SELECT_AGENDAMENTO} WHERE a.id = ?`).get(Number(id)));
+  async function buscar(id, q = db) {
+    const n = idValido(id);
+    return n ? formatar(await q.um(`${SELECT_AGENDAMENTO} WHERE a.id = $1`, [n])) : null;
+  }
 
   const MAX_DIAS_PERIODO = 93; // um trimestre: suficiente para a visão mensal e relatórios
 
@@ -280,27 +336,27 @@ function criarAgenda(db, { agora = () => new Date() } = {}) {
     return { inicio, fim };
   }
 
-  function listar({ data, inicio, fim, barbeiroId, status }) {
+  async function listar({ data, inicio, fim, barbeiroId, status }) {
     const p = periodo({ data, inicio, fim });
-    const filtros = ["a.data BETWEEN ? AND ?"];
+    const filtros = ["a.data BETWEEN $1 AND $2"];
     const valores = [p.inicio, p.fim];
     if (barbeiroId) {
-      filtros.push("a.barbeiro_id = ?");
-      valores.push(Number(barbeiroId));
+      valores.push(idValido(barbeiroId) || 0);
+      filtros.push(`a.barbeiro_id = $${valores.length}`);
     }
     if (status) {
       if (!TRANSICOES[status]) throw new ErroNegocio(422, "Status inválido.", "status");
-      filtros.push("a.status = ?");
       valores.push(status);
+      filtros.push(`a.status = $${valores.length}`);
     }
-    return db
-      .prepare(`${SELECT_AGENDAMENTO} WHERE ${filtros.join(" AND ")} ORDER BY a.data, a.inicio_min, b.nome`)
-      .all(...valores)
-      .map(formatar);
+    const linhas = await db.query(
+      `${SELECT_AGENDAMENTO} WHERE ${filtros.join(" AND ")} ORDER BY a.data, a.inicio_min, b.nome`,
+      valores
+    );
+    return linhas.map(formatar);
   }
 
-  function resumo({ data, inicio, fim, barbeiroId }) {
-    const lista = listar({ data, inicio, fim, barbeiroId });
+  function resumoDe(lista) {
     const contar = (s) => lista.filter((a) => a.status === s).length;
     const somar = (estados) =>
       lista.filter((a) => estados.includes(a.status)).reduce((total, a) => total + a.preco, 0);
@@ -316,28 +372,36 @@ function criarAgenda(db, { agora = () => new Date() } = {}) {
     };
   }
 
+  async function resumo(filtro) {
+    return resumoDe(await listar({ ...filtro, status: null }));
+  }
+
   /* Relatório por barbeiro no período: quantas pessoas cada um atendeu (concluídos),
      além de agendados, faltas, cancelados e faturamento. Barbeiros sem movimento aparecem com zero. */
-  function relatorio({ inicio, fim, barbeiroId }) {
+  async function relatorio({ inicio, fim, barbeiroId }) {
     const p = periodo({ inicio, fim });
-    const filtroBarbeiro = barbeiroId ? "AND b.id = ?" : "";
-    const linhas = db
-      .prepare(
-        `SELECT b.id, b.nome,
-                COUNT(CASE WHEN a.status = 'concluido' THEN 1 END)  AS atendidos,
-                COUNT(CASE WHEN a.status IN ('pendente', 'confirmado') THEN 1 END) AS aguardando,
-                COUNT(CASE WHEN a.status = 'faltou' THEN 1 END)     AS faltas,
-                COUNT(CASE WHEN a.status = 'cancelado' THEN 1 END)  AS cancelados,
-                COUNT(DISTINCT CASE WHEN a.status = 'concluido' THEN a.cliente_id END) AS clientes_unicos,
-                COALESCE(SUM(CASE WHEN a.status = 'concluido' THEN a.preco_centavos END), 0) AS faturado,
-                COALESCE(SUM(CASE WHEN a.status = 'concluido' THEN a.fim_min - a.inicio_min END), 0) AS minutos
-           FROM barbeiros b
-           LEFT JOIN agendamentos a ON a.barbeiro_id = b.id AND a.data BETWEEN ? AND ?
-          WHERE b.ativo = 1 ${filtroBarbeiro}
-          GROUP BY b.id
-          ORDER BY atendidos DESC, b.nome`
-      )
-      .all(p.inicio, p.fim, ...(barbeiroId ? [Number(barbeiroId)] : []));
+    const valores = [p.inicio, p.fim];
+    let filtroBarbeiro = "";
+    if (barbeiroId) {
+      valores.push(idValido(barbeiroId) || 0);
+      filtroBarbeiro = "AND b.id = $3";
+    }
+    const linhas = await db.query(
+      `SELECT b.id, b.nome,
+              COUNT(CASE WHEN a.status = 'concluido' THEN 1 END)::int  AS atendidos,
+              COUNT(CASE WHEN a.status IN ('pendente', 'confirmado') THEN 1 END)::int AS aguardando,
+              COUNT(CASE WHEN a.status = 'faltou' THEN 1 END)::int     AS faltas,
+              COUNT(CASE WHEN a.status = 'cancelado' THEN 1 END)::int  AS cancelados,
+              COUNT(DISTINCT CASE WHEN a.status = 'concluido' THEN a.cliente_id END)::int AS clientes_unicos,
+              COALESCE(SUM(CASE WHEN a.status = 'concluido' THEN a.preco_centavos END), 0)::int AS faturado,
+              COALESCE(SUM(CASE WHEN a.status = 'concluido' THEN a.fim_min - a.inicio_min END), 0)::int AS minutos
+         FROM barbeiros b
+         LEFT JOIN agendamentos a ON a.barbeiro_id = b.id AND a.data BETWEEN $1 AND $2
+        WHERE b.ativo ${filtroBarbeiro}
+        GROUP BY b.id, b.nome
+        ORDER BY atendidos DESC, b.nome`,
+      valores
+    );
 
     const barbeiros = linhas.map((l) => {
       const compareceram = l.atendidos + l.faltas;
@@ -391,28 +455,18 @@ function criarAgenda(db, { agora = () => new Date() } = {}) {
     return { inicio, fim };
   }
 
-  function conflito(data, barbeiroId, inicio, fim, ignorarId = 0) {
-    return db
-      .prepare(
-        `SELECT 1 FROM agendamentos
-          WHERE data = ? AND barbeiro_id = ? AND id <> ? AND status IN (${placeholders(STATUS_OCUPAM)})
-            AND inicio_min < ? AND ? < fim_min`
-      )
-      .get(data, barbeiroId, ignorarId, ...STATUS_OCUPAM, fim, inicio);
-  }
-
   // Barbeiro só agenda para si; administrador escolhe (ou deixa o sistema escolher).
-  function barbeiroDaEquipe(pedidoId, usuario) {
+  async function barbeiroDaEquipe(pedidoId, usuario) {
     const id = usuario.papel === "barbeiro" ? usuario.barbeiro_id : pedidoId;
     if (!id) return null;
-    const barbeiro = barbeiroAtivo(id);
+    const barbeiro = await barbeiroAtivo(id);
     if (!barbeiro) throw new ErroNegocio(422, "Escolha um barbeiro válido.", "barbeiro");
     return barbeiro;
   }
 
   /* Agendamento feito pela equipe (telefone, balcão, encaixe). Já nasce confirmado.
      O telefone é opcional: sem ele, o cliente fica registrado só pelo nome. */
-  function criarManual(pedido, usuario) {
+  async function criarManual(pedido, usuario) {
     const nome = String(pedido.nome || "").trim().replace(/\s+/g, " ");
     if (nome.length < 2) throw new ErroNegocio(422, "Informe o nome do cliente.", "nome");
     if (nome.length > 80) throw new ErroNegocio(422, "O nome pode ter no máximo 80 letras.", "nome");
@@ -421,124 +475,120 @@ function criarAgenda(db, { agora = () => new Date() } = {}) {
       telefone = normalizarTelefone(pedido.telefone);
       if (!telefone) throw new ErroNegocio(422, "Telefone inválido. Use DDD + número.", "telefone");
     }
-    const servicos = servicosDoPedido(pedido);
+    const servicos = await servicosDoPedido(pedido);
     const { inicio, fim } = validarHorarioEquipe(pedido.data, pedido.hora, servicos.duracao);
-    const escolhido = barbeiroDaEquipe(pedido.barbeiroId, usuario);
+    const escolhido = await barbeiroDaEquipe(pedido.barbeiroId, usuario);
     const status = pedido.status === "concluido" ? "concluido" : "confirmado";
 
-    return transacao(db, () => {
+    return db.transacao(async (tx) => {
+      await travarDia(tx, pedido.data);
       let barbeiro = escolhido;
       if (barbeiro) {
-        if (conflito(pedido.data, barbeiro.id, inicio, fim))
+        if (!(await barbeiroLivre(tx, pedido.data, barbeiro.id, inicio, fim)))
           throw new ErroNegocio(409, `${barbeiro.nome} já tem atendimento nesse horário.`, "hora");
       } else {
-        barbeiro = escolherBarbeiro(pedido.data, inicio, fim);
+        barbeiro = await escolherBarbeiro(tx, pedido.data, inicio, fim);
         if (!barbeiro) throw new ErroNegocio(409, "Nenhum barbeiro está livre nesse horário.", "hora");
       }
 
       const cliente = telefone
-        ? db
-            .prepare(
-              `INSERT INTO clientes (nome, telefone) VALUES (?, ?)
-               ON CONFLICT (telefone) DO UPDATE SET nome = excluded.nome RETURNING id`
-            )
-            .get(nome, telefone)
-        : db.prepare("INSERT INTO clientes (nome, telefone) VALUES (?, NULL) RETURNING id").get(nome);
+        ? await tx.um(
+            `INSERT INTO clientes (nome, telefone) VALUES ($1, $2)
+             ON CONFLICT (telefone) DO UPDATE SET nome = excluded.nome RETURNING id`,
+            [nome, telefone]
+          )
+        : await tx.um("INSERT INTO clientes (nome, telefone) VALUES ($1, NULL) RETURNING id", [nome]);
 
-      const codigo = crypto.randomBytes(4).toString("hex").toUpperCase();
-      const { id } = db
-        .prepare(
-          `INSERT INTO agendamentos
-             (codigo, cliente_id, servico_id, barbeiro_id, data, inicio_min, fim_min, preco_centavos, status, consentimento_em)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
-           RETURNING id`
-        )
-        .get(codigo, cliente.id, servicos.lista[0].id, barbeiro.id, pedido.data, inicio, fim, servicos.preco, status);
-      gravarServicos(id, servicos);
-      db.prepare("INSERT INTO historico_status (agendamento_id, de, para, usuario_id) VALUES (?, NULL, ?, ?)").run(
-        id,
+      return inserirAgendamento(tx, {
+        clienteId: cliente.id,
+        servicos,
+        barbeiroId: barbeiro.id,
+        data: pedido.data,
+        inicio,
+        fim,
         status,
-        usuario.id
-      );
-      return buscar(id);
+        usuarioId: usuario.id,
+      });
     });
+  }
+
+  async function carregarParaAlterar(tx, id, usuario) {
+    const n = idValido(id);
+    const atual = n
+      ? await tx.um("SELECT id, status, barbeiro_id, inicio_min, fim_min FROM agendamentos WHERE id = $1 FOR UPDATE", [n])
+      : null;
+    if (!atual) throw new ErroNegocio(404, "Agendamento não encontrado.");
+    if (usuario.papel === "barbeiro" && atual.barbeiro_id !== usuario.barbeiro_id)
+      throw new ErroNegocio(403, "Você só pode alterar os seus atendimentos.");
+    return atual;
   }
 
   /* Remarcação (arrastar no calendário): muda data, horário e, para o administrador, o barbeiro.
      Só atendimentos ainda em aberto (a confirmar ou confirmados) podem mudar de lugar. */
-  function remarcar(id, destino, usuario) {
-    return transacao(db, () => {
-      const atual = db
-        .prepare("SELECT id, status, barbeiro_id, inicio_min, fim_min FROM agendamentos WHERE id = ?")
-        .get(Number(id));
-      if (!atual) throw new ErroNegocio(404, "Agendamento não encontrado.");
-      if (usuario.papel === "barbeiro" && atual.barbeiro_id !== usuario.barbeiro_id)
-        throw new ErroNegocio(403, "Você só pode alterar os seus atendimentos.");
+  async function remarcar(id, destino, usuario) {
+    return db.transacao(async (tx) => {
+      await travarDia(tx, destino.data);
+      const atual = await carregarParaAlterar(tx, id, usuario);
       if (!["pendente", "confirmado"].includes(atual.status))
         throw new ErroNegocio(422, "Só dá para remarcar atendimentos a confirmar ou confirmados.", "status");
 
       const novoBarbeiroId =
-        usuario.papel === "barbeiro" ? atual.barbeiro_id : Number(destino.barbeiroId) || atual.barbeiro_id;
-      const barbeiro = barbeiroAtivo(novoBarbeiroId);
+        usuario.papel === "barbeiro" ? atual.barbeiro_id : idValido(destino.barbeiroId) || atual.barbeiro_id;
+      const barbeiro = await barbeiroAtivo(novoBarbeiroId, tx);
       if (!barbeiro) throw new ErroNegocio(422, "Escolha um barbeiro válido.", "barbeiro");
       const { inicio, fim } = validarHorarioEquipe(destino.data, destino.hora, atual.fim_min - atual.inicio_min);
-      if (conflito(destino.data, barbeiro.id, inicio, fim, atual.id))
+      if (!(await barbeiroLivre(tx, destino.data, barbeiro.id, inicio, fim, atual.id)))
         throw new ErroNegocio(409, `${barbeiro.nome} já tem atendimento nesse horário.`, "hora");
 
-      db.prepare(
-        `UPDATE agendamentos SET data = ?, inicio_min = ?, fim_min = ?, barbeiro_id = ?, atualizado_em = datetime('now')
-          WHERE id = ?`
-      ).run(destino.data, inicio, fim, barbeiro.id, atual.id);
-      return buscar(atual.id);
+      await tx.query(
+        `UPDATE agendamentos SET data = $1, inicio_min = $2, fim_min = $3, barbeiro_id = $4, atualizado_em = now()
+          WHERE id = $5`,
+        [destino.data, inicio, fim, barbeiro.id, atual.id]
+      );
+      return buscar(atual.id, tx);
     });
   }
 
-  function mudarStatus(id, novo, usuario) {
-    return transacao(db, () => {
-      const atual = db.prepare("SELECT id, status, barbeiro_id FROM agendamentos WHERE id = ?").get(Number(id));
-      if (!atual) throw new ErroNegocio(404, "Agendamento não encontrado.");
-      if (usuario.papel === "barbeiro" && atual.barbeiro_id !== usuario.barbeiro_id)
-        throw new ErroNegocio(403, "Você só pode alterar os seus atendimentos.");
+  async function mudarStatus(id, novo, usuario) {
+    return db.transacao(async (tx) => {
+      const atual = await carregarParaAlterar(tx, id, usuario);
       if (!(TRANSICOES[atual.status] || []).includes(novo))
         throw new ErroNegocio(422, `Não é possível passar de "${atual.status}" para "${novo}".`, "status");
 
-      db.prepare("UPDATE agendamentos SET status = ?, atualizado_em = datetime('now') WHERE id = ?").run(novo, atual.id);
-      db.prepare("INSERT INTO historico_status (agendamento_id, de, para, usuario_id) VALUES (?, ?, ?, ?)").run(
+      await tx.query("UPDATE agendamentos SET status = $1, atualizado_em = now() WHERE id = $2", [novo, atual.id]);
+      await tx.query("INSERT INTO historico_status (agendamento_id, de, para, usuario_id) VALUES ($1, $2, $3, $4)", [
         atual.id,
         atual.status,
         novo,
-        usuario.id
-      );
-      return buscar(atual.id);
+        usuario.id,
+      ]);
+      return buscar(atual.id, tx);
     });
   }
 
   /* LGPD (art. 15 e 16): passado o prazo de retenção, o cliente vira "Cliente anonimizado".
      O agendamento continua contando para as estatísticas, sem identificar ninguém. */
-  function anonimizarAntigos(dias = DIAS_RETENCAO) {
+  async function anonimizarAntigos(dias = DIAS_RETENCAO) {
     const corte = regras.somarDias(regras.hojeISO(agora()), -dias);
-    return transacao(db, () => {
-      const antigos = db
-        .prepare(
-          `SELECT DISTINCT c.id FROM clientes c
-            WHERE c.telefone IS NOT NULL
-              AND NOT EXISTS (SELECT 1 FROM agendamentos a WHERE a.cliente_id = c.id AND a.data >= ?)`
-        )
-        .all(corte);
-      const anonimizar = db.prepare("UPDATE clientes SET nome = 'Cliente anonimizado', telefone = NULL WHERE id = ?");
-      antigos.forEach((c) => anonimizar.run(c.id));
-      return antigos.length;
-    });
+    const linhas = await db.query(
+      `UPDATE clientes c SET nome = 'Cliente anonimizado', telefone = NULL
+        WHERE c.telefone IS NOT NULL
+          AND NOT EXISTS (SELECT 1 FROM agendamentos a WHERE a.cliente_id = c.id AND a.data >= $1)
+        RETURNING c.id`,
+      [corte]
+    );
+    return linhas.length;
   }
 
   return {
     listarServicos,
-    listarBarbeiros,
+    listarBarbeiros: () => listarBarbeiros(),
     disponibilidade,
     criarAgendamento,
-    buscar,
+    buscar: (id) => buscar(id),
     listar,
     resumo,
+    resumoDe,
     relatorio,
     criarManual,
     remarcar,

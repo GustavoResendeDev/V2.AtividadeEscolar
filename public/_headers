@@ -1,0 +1,18 @@
+# Cabeçalhos que a Cloudflare aplica às páginas e arquivos de public/ (a API define os seus em server/app.js).
+# Mantenha igual a CABECALHOS_SEGURANCA em server/app.js: o teste tests/unit/cabecalhos.test.js confere.
+/*
+  Content-Security-Policy: default-src 'self'; img-src 'self' data:; media-src 'self'; style-src 'self'; script-src 'self'; connect-src 'self'; font-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  X-Frame-Options: DENY
+  Permissions-Policy: camera=(), microphone=(), geolocation=()
+  Strict-Transport-Security: max-age=31536000
+
+/image/*
+  Cache-Control: public, max-age=604800
+
+/fonts/*
+  Cache-Control: public, max-age=604800
+
+/video/*
+  Cache-Control: public, max-age=604800

@@ -1,0 +1,45 @@
+# Backup noturno do banco da Supabase para o Cloudflare R2.
+# Roda às 02:30 de Brasília (05:30 UTC), antes da manutenção diária do Worker (03:00).
+# Os arquivos antigos são apagados pelo próprio R2 (regra de ciclo de vida de 30 dias, veja DEPLOY.md).
+name: Backup noturno
+
+on:
+  schedule:
+    - cron: "30 5 * * *"
+  workflow_dispatch:
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    env:
+      BUCKET: novaera-backups
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+
+      - name: Instala o pg_dump 17 (mesma versão da Supabase)
+        run: |
+          sudo apt-get install -y -qq postgresql-common > /dev/null
+          sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y > /dev/null
+          sudo apt-get install -y -qq postgresql-client-17 > /dev/null
+          /usr/lib/postgresql/17/bin/pg_dump --version
+
+      - name: Gera o backup (formato custom, já comprimido) e confere se abre
+        env:
+          DATABASE_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          ARQUIVO="novaera-$(date -u +%Y-%m-%dT%H-%M-%SZ).dump"
+          /usr/lib/postgresql/17/bin/pg_dump "$DATABASE_URL" --schema=public --format=custom --no-owner --no-privileges --file="$ARQUIVO"
+          /usr/lib/postgresql/17/bin/pg_restore --list "$ARQUIVO" > /dev/null
+          ls -lh "$ARQUIVO"
+          echo "ARQUIVO=$ARQUIVO" >> "$GITHUB_ENV"
+
+      - name: Envia para o R2
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: npx wrangler r2 object put "$BUCKET/diario/$ARQUIVO" --file="$ARQUIVO" --remote

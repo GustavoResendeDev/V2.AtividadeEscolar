@@ -1,36 +1,48 @@
-/* Autenticação do painel: senhas com scrypt e sessões guardadas no banco.
-   O navegador recebe só um token aleatório (cookie HttpOnly); o banco guarda o hash dele. */
-const crypto = require("node:crypto");
+/* Autenticação do painel.
+   Senhas: bcrypt calculado DENTRO do Postgres (pgcrypto). Assim o Worker não gasta CPU com hash
+   (o plano grátis da Cloudflare dá só 10 ms de CPU por requisição).
+   Sessões: o navegador recebe só um token aleatório (cookie HttpOnly); o banco guarda o hash dele. */
 
 const DURACAO_SESSAO_MS = 8 * 60 * 60 * 1000; // um turno de trabalho
 const COOKIE = "sessao";
+const CUSTO_BCRYPT = 10;
 
-function gerarHashSenha(senha) {
-  const sal = crypto.randomBytes(16);
-  const hash = crypto.scryptSync(senha, sal, 64);
-  return `scrypt$${sal.toString("hex")}$${hash.toString("hex")}`;
+// Hash bcrypt qualquer, usado quando o e-mail não existe, para o tempo de resposta não denunciar isso.
+const HASH_FALSO = "$2a$10$m1dfJlYTRGQb4e9.vRLsIuiF0.chSz/xM3gtgepBz7nzjUt1TDio.";
+
+const paraHex = (buffer) => Array.from(new Uint8Array(buffer), (b) => b.toString(16).padStart(2, "0")).join("");
+
+async function hashToken(token) {
+  return paraHex(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(token)));
 }
 
-function conferirSenha(senha, armazenado) {
-  const [algoritmo, salHex, hashHex] = String(armazenado).split("$");
-  if (algoritmo !== "scrypt" || !salHex || !hashHex) return false;
-  const esperado = Buffer.from(hashHex, "hex");
-  const calculado = crypto.scryptSync(String(senha), Buffer.from(salHex, "hex"), esperado.length);
-  return crypto.timingSafeEqual(esperado, calculado);
+function novoToken() {
+  const bytes = crypto.getRandomValues(new Uint8Array(32));
+  return btoa(String.fromCharCode(...bytes)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 }
 
-// Hash usado quando o e-mail não existe, para o tempo de resposta não denunciar isso.
-const HASH_FALSO = gerarHashSenha(crypto.randomBytes(12).toString("hex"));
-
-const hashToken = (token) => crypto.createHash("sha256").update(token).digest("hex");
-
-function lerCookie(req, nome) {
-  const cabecalho = req.headers.cookie || "";
-  for (const parte of cabecalho.split(";")) {
+function lerCookie(cabecalho, nome) {
+  for (const parte of String(cabecalho || "").split(";")) {
     const [chave, ...resto] = parte.trim().split("=");
     if (chave === nome) return decodeURIComponent(resto.join("="));
   }
   return null;
+}
+
+/* Cadastro de usuário (script npm run usuario, deploy e testes). Atualiza se o e-mail já existir. */
+async function criarUsuario(db, { nome, email, senha, papel = "admin", barbeiroId = null }) {
+  if (!nome || !email || !senha) throw new Error("Informe nome, e-mail e senha.");
+  if (String(senha).length < 8) throw new Error("A senha precisa ter pelo menos 8 caracteres.");
+  if (!["admin", "barbeiro"].includes(papel)) throw new Error("Papel deve ser admin ou barbeiro.");
+  if (papel === "barbeiro" && !barbeiroId) throw new Error("Usuário barbeiro precisa do id do barbeiro.");
+  return db.um(
+    `INSERT INTO usuarios (nome, email, senha_hash, papel, barbeiro_id)
+     VALUES ($1, $2, crypt($3, gen_salt('bf', ${CUSTO_BCRYPT})), $4, $5)
+     ON CONFLICT (lower(email)) DO UPDATE SET nome = excluded.nome, senha_hash = excluded.senha_hash,
+       papel = excluded.papel, barbeiro_id = excluded.barbeiro_id, ativo = TRUE
+     RETURNING id, nome, email, papel, barbeiro_id`,
+    [nome, String(email).trim(), String(senha), papel, barbeiroId]
+  );
 }
 
 function criarAuth(db, { producao = false, agora = () => Date.now() } = {}) {
@@ -38,83 +50,79 @@ function criarAuth(db, { producao = false, agora = () => Date.now() } = {}) {
     .filter(Boolean)
     .join("; ");
 
-  function entrar(res, email, senha) {
-    const usuario = db
-      .prepare("SELECT id, nome, email, papel, barbeiro_id, senha_hash FROM usuarios WHERE email = ? AND ativo = 1")
-      .get(String(email || "").trim());
-    const ok = conferirSenha(senha || "", usuario ? usuario.senha_hash : HASH_FALSO);
-    if (!usuario || !ok) return null;
+  /* Confere e-mail e senha numa consulta só. Devolve { usuario, cookie } ou null. */
+  async function entrar(email, senha) {
+    const linha = await db.um(
+      `SELECT u.id, u.nome, u.email, u.papel, u.barbeiro_id,
+              (u.id IS NOT NULL AND crypt($2, COALESCE(u.senha_hash, $3)) = COALESCE(u.senha_hash, $3)) AS ok
+         FROM (SELECT 1) AS x
+         LEFT JOIN usuarios u ON lower(u.email) = lower($1) AND u.ativo`,
+      [String(email || "").trim(), String(senha || ""), HASH_FALSO]
+    );
+    if (!linha || !linha.ok) return null;
 
-    db.prepare("DELETE FROM sessoes WHERE expira_em < ?").run(agora());
-    const token = crypto.randomBytes(32).toString("base64url");
-    db.prepare("INSERT INTO sessoes (token_hash, usuario_id, expira_em) VALUES (?, ?, ?)").run(
-      hashToken(token),
-      usuario.id,
-      agora() + DURACAO_SESSAO_MS
-    );
-    res.setHeader(
-      "Set-Cookie",
-      `${COOKIE}=${token}; ${atributosCookie}; Max-Age=${DURACAO_SESSAO_MS / 1000}`
-    );
-    delete usuario.senha_hash;
-    return usuario;
+    const token = novoToken();
+    await db.query("DELETE FROM sessoes WHERE expira_em < $1", [agora()]);
+    await db.query("INSERT INTO sessoes (token_hash, usuario_id, expira_em) VALUES ($1, $2, $3)", [
+      await hashToken(token),
+      linha.id,
+      agora() + DURACAO_SESSAO_MS,
+    ]);
+    const { ok, ...usuario } = linha;
+    return { usuario, cookie: `${COOKIE}=${token}; ${atributosCookie}; Max-Age=${DURACAO_SESSAO_MS / 1000}` };
   }
 
-  function sair(req, res) {
-    const token = lerCookie(req, COOKIE);
-    if (token) db.prepare("DELETE FROM sessoes WHERE token_hash = ?").run(hashToken(token));
-    res.setHeader("Set-Cookie", `${COOKIE}=; ${atributosCookie}; Max-Age=0`);
+  /* Apaga a sessão e devolve o cookie que a remove do navegador. */
+  async function sair(cabecalhoCookie) {
+    const token = lerCookie(cabecalhoCookie, COOKIE);
+    if (token) await db.query("DELETE FROM sessoes WHERE token_hash = $1", [await hashToken(token)]);
+    return `${COOKIE}=; ${atributosCookie}; Max-Age=0`;
   }
 
-  function usuarioDaSessao(req) {
-    const token = lerCookie(req, COOKIE);
+  async function usuarioDaSessao(cabecalhoCookie) {
+    const token = lerCookie(cabecalhoCookie, COOKIE);
     if (!token) return null;
-    return (
-      db
-        .prepare(
-          `SELECT u.id, u.nome, u.email, u.papel, u.barbeiro_id
-             FROM sessoes s JOIN usuarios u ON u.id = s.usuario_id
-            WHERE s.token_hash = ? AND s.expira_em > ? AND u.ativo = 1`
-        )
-        .get(hashToken(token), agora()) || null
+    return db.um(
+      `SELECT u.id, u.nome, u.email, u.papel, u.barbeiro_id
+         FROM sessoes s JOIN usuarios u ON u.id = s.usuario_id
+        WHERE s.token_hash = $1 AND s.expira_em > $2 AND u.ativo`,
+      [await hashToken(token), agora()]
     );
   }
 
-  // Middleware: só deixa passar quem está logado.
-  function exigirLogin(req, res, next) {
-    const usuario = usuarioDaSessao(req);
-    if (!usuario) return res.status(401).json({ erro: "Faça login para continuar." });
-    req.usuario = usuario;
-    next();
-  }
-
-  return { entrar, sair, exigirLogin, usuarioDaSessao };
+  return { entrar, sair, usuarioDaSessao };
 }
 
 /* Limita tentativas de login por IP (proteção contra força bruta).
-   Guardado em memória: suficiente para um único servidor. */
-function criarLimitador({ maximo = 5, janelaMs = 15 * 60 * 1000, agora = () => Date.now() } = {}) {
-  const tentativas = new Map();
-
-  function bloqueado(chave) {
-    const registro = tentativas.get(chave);
+   Fica no banco porque o Worker roda em muitas máquinas ao mesmo tempo. */
+function criarLimitador(db, { maximo = 5, janelaMs = 15 * 60 * 1000, agora = () => Date.now() } = {}) {
+  async function bloqueado(chave) {
+    const registro = await db.um("SELECT inicio, falhas FROM tentativas_login WHERE chave = $1", [chave]);
     if (!registro) return 0;
-    if (agora() - registro.inicio > janelaMs) {
-      tentativas.delete(chave);
-      return 0;
-    }
-    return registro.falhas >= maximo ? Math.ceil((registro.inicio + janelaMs - agora()) / 1000) : 0;
+    const inicio = Number(registro.inicio);
+    if (agora() - inicio > janelaMs) return 0;
+    return registro.falhas >= maximo ? Math.ceil((inicio + janelaMs - agora()) / 1000) : 0;
   }
 
-  function falhou(chave) {
-    const registro = tentativas.get(chave);
-    if (!registro || agora() - registro.inicio > janelaMs) tentativas.set(chave, { inicio: agora(), falhas: 1 });
-    else registro.falhas += 1;
+  async function falhou(chave) {
+    await db.query(
+      `INSERT INTO tentativas_login (chave, inicio, falhas) VALUES ($1, $2, 1)
+       ON CONFLICT (chave) DO UPDATE SET
+         falhas = CASE WHEN $2 - tentativas_login.inicio > $3 THEN 1 ELSE tentativas_login.falhas + 1 END,
+         inicio = CASE WHEN $2 - tentativas_login.inicio > $3 THEN $2 ELSE tentativas_login.inicio END`,
+      [chave, agora(), janelaMs]
+    );
   }
 
-  const limpar = (chave) => tentativas.delete(chave);
+  const limpar = (chave) => db.query("DELETE FROM tentativas_login WHERE chave = $1", [chave]);
 
   return { bloqueado, falhou, limpar };
 }
 
-module.exports = { gerarHashSenha, conferirSenha, criarAuth, criarLimitador };
+/* Limpeza diária (cron): sessões vencidas e contadores de tentativas antigos. */
+async function limparExpirados(db, { agora = () => Date.now() } = {}) {
+  await db.query("DELETE FROM sessoes WHERE expira_em < $1", [agora()]);
+  await db.query("DELETE FROM tentativas_login WHERE inicio < $1", [agora() - 24 * 60 * 60 * 1000]);
+}
+
+module.exports = { criarUsuario, criarAuth, criarLimitador, limparExpirados, lerCookie };

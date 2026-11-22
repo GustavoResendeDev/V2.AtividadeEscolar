@@ -33,13 +33,39 @@ Troque `[YOUR-PASSWORD]` pela senha do banco. Se não souber a senha, redefina e
 2. **Token para o GitHub:** **My Profile › API Tokens › Create Token** › modelo **Edit Cloudflare Workers**,
    e acrescente a permissão **Account › Workers R2 Storage › Edit**. Copie o token.
 3. **Account ID:** aparece em `npx wrangler whoami` ou na lateral da página inicial da conta.
+4. **Hyperdrive** (conexões com o banco já abertas). Use a string do *Session pooler* (porta 5432):
+   ```bash
+   npx wrangler hyperdrive create novaera-banco --connection-string="postgresql://..." --caching-disabled
+   ```
+   Copie o `id` que aparecer para `[[hyperdrive]]` no `wrangler.toml`. O cache de consultas fica desligado
+   porque a agenda muda o tempo todo. O id atual é `c6f4b18e379f44c6929a6081ba3ac76c`.
 
-### 3. Resend
+### 3. Resend (aviso por e-mail)
 
-**API Keys › Create API Key** (permissão *Sending access*). Sem domínio próprio verificado, o Resend só
-entrega para o e-mail da sua conta no Resend: use esse e-mail em `EMAIL_AVISO_PARA`. Com domínio
-verificado, dá para mandar para qualquer endereço e definir o remetente (variável `EMAIL_REMETENTE`
-no `wrangler.toml`, ex.: `Nova Era <avisos@seudominio.com.br>`).
+Sem os segredos do Resend o site funciona normalmente, só não manda o aviso.
+
+1. Crie a conta em <https://resend.com>, de preferência com o e-mail que vai receber os avisos.
+2. **API Keys › Create API Key**, permissão **Sending access**. Copie a chave (começa com `re_`, aparece uma vez só).
+3. Cadastre no GitHub (o primeiro comando pede a chave sem mostrar na tela):
+   ```bash
+   gh secret set RESEND_API_KEY
+   gh secret set EMAIL_AVISO_PARA --body 'email-da-conta-do-resend@exemplo.com'
+   ```
+4. Publique de novo para o Worker receber os segredos: **Actions › Deploy na Cloudflare › Run workflow**
+   (ou `gh workflow run deploy.yml`).
+5. Teste: faça um agendamento pelo site. Chega o e-mail "Novo agendamento: …" com os dados e o link do painel.
+   Se não chegar, olhe o spam e rode `npx wrangler tail` enquanto agenda de novo: o erro do Resend aparece ali.
+
+**Sem domínio próprio**, o Resend só entrega para o e-mail da sua conta no Resend: use esse e-mail em
+`EMAIL_AVISO_PARA`. **Com domínio verificado** (Resend › Domains › Add Domain, e os registros DNS que ele
+mostrar), dá para mandar para qualquer endereço e escolher o remetente, descomentando no `wrangler.toml`:
+
+```toml
+[vars]
+EMAIL_REMETENTE = "Nova Era <avisos@seudominio.com.br>"
+```
+
+Plano grátis: 3 mil e-mails por mês, 100 por dia.
 
 ### 4. Segredos no GitHub
 
@@ -49,7 +75,7 @@ Em **Settings › Secrets and variables › Actions**:
 | --- | --- |
 | `CLOUDFLARE_API_TOKEN` | token do passo 2.2 |
 | `CLOUDFLARE_ACCOUNT_ID` | id do passo 2.3 |
-| `DATABASE_URL` | string do *Transaction pooler* (6543) |
+| `DATABASE_URL` | string do *Transaction pooler* (6543); reserva, caso o Hyperdrive não esteja configurado |
 | `SUPABASE_DB_URL` | string do *Session pooler* (5432) |
 | `ADMIN_EMAIL` / `ADMIN_SENHA` | login do administrador, criado no primeiro deploy (senha com 8+ caracteres) |
 | `RESEND_API_KEY` | chave do Resend |
@@ -63,7 +89,8 @@ Ou pelo terminal, com o `gh`: `gh secret set DATABASE_URL` (ele pede o valor sem
 ### 5. Primeiro deploy
 
 Faça merge na `main` (ou rode **Actions › Deploy na Cloudflare › Run workflow**). O endereço final
-aparece no log do passo *Publica o Worker*. Para usar um domínio próprio: **Workers › nova-era-barbearia ›
+aparece no log do passo *Publica o Worker*. Hoje: <https://nova-era-barbearia.novaera-barbearia.workers.dev>.
+O `wrangler deploy` monta o site em `dist/` sozinho (`[build]` no `wrangler.toml`). Para usar um domínio próprio: **Workers › nova-era-barbearia ›
 Settings › Domains & Routes**.
 
 ## No dia a dia
@@ -72,6 +99,8 @@ Settings › Domains & Routes**.
 - **Novo usuário do painel:** coloque `DATABASE_URL` (session pooler) no `.env` e rode
   `npm run usuario -- --nome "Ana" --email ana@novaera.com.br --senha "senhaForte123" --papel barbeiro --barbeiro 2`.
 - **Ver erros do Worker:** `npx wrangler tail` ou o painel do Worker › Logs.
+- **Login de barbeiro:** cada barbeiro precisa de um usuário próprio (comando acima, com `--papel barbeiro`
+  e o id: 1 Marcio Rocha, 2 Kaua, 3 Felipe). O barbeiro vê e altera só a própria agenda e o próprio relatório.
 - **Backup na hora:** **Actions › Backup noturno › Run workflow**.
 
 ## Restaurar um backup

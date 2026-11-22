@@ -1,6 +1,6 @@
 {
   "name": "nova-era-barbearia",
-  "version": "2.1.0",
+  "version": "2.2.0",
   "description": "Sistema de agendamento da Nova Era Barbearia: site institucional, agendamento online e painel do barbeiro. Produção: Cloudflare Worker + Supabase.",
   "private": true,
   "main": "server/worker.mjs",

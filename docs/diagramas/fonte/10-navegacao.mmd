@@ -3,7 +3,8 @@ flowchart TB
   A["2 · Agendamento<br/>formulário + confirmação"]
   P["3 · Privacidade<br/>LGPD"]
   L["4 · Login<br/>área da equipe"]
-  K["5 · Painel<br/>agenda do dia"]
+  K["5 · Painel<br/>calendário · lista · relatório"]
+  E["Página de erro 404"]
   W["WhatsApp"]:::ext
   M["Google Maps / Waze"]:::ext
   I -- "Agendar agora" --> A
@@ -14,5 +15,6 @@ flowchart TB
   I & A & P -- "rodapé: Área da equipe" --> L
   L -- "login válido" --> K
   K -- "Sair" --> L
+  E -- "Voltar ao início" --> I
   K -- "contato com cliente" --> W
   classDef ext fill:#dcfce7,stroke:#15803d

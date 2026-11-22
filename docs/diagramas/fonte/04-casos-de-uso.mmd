@@ -6,17 +6,20 @@ flowchart LR
       direction TB
       UC1(["UC01 Consultar serviços e preços"])
       UC2(["UC02 Ver localização e horário"])
-      UC3(["UC03 Agendar horário"])
+      UC3(["UC03 Agendar horário (um ou mais serviços)"])
       UC4(["UC04 Ver horários livres"])
       UC5(["UC05 Enviar resumo pelo WhatsApp"])
     end
     subgraph SE["Área da equipe"]
       direction TB
       UC6(["UC06 Entrar no painel"])
-      UC7(["UC07 Ver agenda e indicadores do dia"])
+      UC7(["UC07 Ver agenda: dia, semana, mês ou lista"])
       UC8(["UC08 Confirmar, concluir, registrar falta ou cancelar"])
-      UC9(["UC09 Filtrar por barbeiro"])
-      UC10(["UC10 Gerenciar usuários e backups"])
+      UC9(["UC09 Agendar manualmente (balcão ou telefone)"])
+      UC10(["UC10 Remarcar atendimento"])
+      UC12(["UC11 Gerar relatório por barbeiro"])
+      UC11(["UC12 Filtrar por barbeiro"])
+      UC13(["UC13 Gerenciar usuários e backups"])
     end
   end
   B(["Barbeiro"]):::ator
@@ -29,7 +32,10 @@ flowchart LR
   UC6 --- B
   UC7 --- B
   UC8 --- B
-  UC9 --- AD
-  UC10 --- AD
+  UC9 --- B
+  UC10 --- B
+  UC12 --- B
+  UC11 --- AD
+  UC13 --- AD
   AD == "herda de" ==> B
   classDef ator fill:#18181b,color:#fff,stroke:#18181b

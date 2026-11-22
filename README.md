@@ -1,7 +1,15 @@
 # Nova Era Barbearia — Sistema de Agendamento
 
 Sistema web da Nova Era Barbearia (Goiânia – GO): site institucional, agendamento online com
-banco de dados e painel para a equipe organizar a agenda.
+banco de dados e painel para a equipe organizar a agenda (versão 2.1.0).
+
+**Demonstração:** <https://gustavoresendedev.github.io/V2.AtividadeEscolar/>. Roda no navegador,
+sem servidor, e os dados ficam só no aparelho de quem acessa. Para entrar no painel, use
+`admin@novaera.com.br` e a senha `novaera2026`.
+
+**Equipe:** Gustavo Rodrigues Resende (gerente de projeto), Belyt Vitoria (requisitos e documentação),
+Felipe Santos de Santana Oliveira (arquitetura e back-end), Gabriel Fernandes Pinheiro (design e front-end)
+e Gabriel Alberico Martins Oliveira (testes e treinamento).
 
 | Tela | Endereço | Quem usa |
 | --- | --- | --- |
@@ -101,11 +109,14 @@ docs/              documentação do projeto, manual, slides e diagramas
 | --- | --- | --- |
 | GET | `/api/servicos` | Serviços ativos (nome, duração, preço) |
 | GET | `/api/barbeiros` | Barbeiros ativos |
-| GET | `/api/disponibilidade?data=&servico=&barbeiro=` | Horários livres do dia |
+| GET | `/api/disponibilidade?data=&servicos=1,7&barbeiro=` | Horários livres do dia para a duração somada |
 | POST | `/api/agendamentos` | Cria um agendamento (devolve código e link do WhatsApp) |
 | POST | `/api/admin/login` · `/api/admin/logout` | Entrar e sair do painel |
-| GET | `/api/admin/agendamentos?data=&barbeiro=&status=` | Agenda do dia + indicadores |
+| GET | `/api/admin/agendamentos?data=` ou `?inicio=&fim=` (+ `barbeiro`, `status`) | Agenda de um dia ou período + indicadores |
+| POST | `/api/admin/agendamentos` | Agendamento manual da equipe (já confirmado) |
 | PATCH | `/api/admin/agendamentos/:id` | Muda a situação (confirmar, concluir, faltou, cancelar) |
+| PATCH | `/api/admin/agendamentos/:id/horario` | Remarca data, horário ou barbeiro |
+| GET | `/api/admin/relatorio?inicio=&fim=` | Relatório por barbeiro no período |
 | GET | `/api/saude` | Verificação de funcionamento (usada pela hospedagem) |
 
 ## Implantação (produção)

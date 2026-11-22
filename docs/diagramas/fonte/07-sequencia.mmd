@@ -5,12 +5,12 @@ sequenceDiagram
   participant A as API<br/>(Express)
   participant R as Regras<br/>(agenda.js)
   participant D as SQLite
-  C->>N: Escolhe serviço, barbeiro e data
-  N->>A: GET /api/disponibilidade
-  A->>R: disponibilidade(data, serviço, barbeiro)
+  C->>N: Escolhe data, serviços e barbeiro
+  N->>A: GET /api/disponibilidade?servicos=1,7
+  A->>R: disponibilidade(data, serviços, barbeiro)
   R->>D: SELECT agendamentos do dia
   D-->>R: horários ocupados
-  R-->>N: lista de horários livres
+  R-->>N: horários livres para a duração somada
   C->>N: Escolhe horário, nome, WhatsApp e aceita a política
   N->>N: Valida os campos
   N->>A: POST /api/agendamentos (JSON)
@@ -18,7 +18,7 @@ sequenceDiagram
   R->>D: BEGIN IMMEDIATE
   R->>D: confere conflito no horário
   alt horário livre
-    R->>D: INSERT cliente, agendamento e histórico
+    R->>D: INSERT cliente, agendamento, serviços e histórico
     R->>D: COMMIT
     A-->>N: 201 · código + link do WhatsApp
     N-->>C: "Horário reservado" + botão Enviar no WhatsApp

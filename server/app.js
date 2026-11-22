@@ -250,6 +250,22 @@ function criarApp({
     return c.json(await c.get("agenda").remarcar(c.req.param("id"), destino, c.get("usuario")));
   });
 
+  // Apagar um atendimento de vez.
+  api.delete("/admin/agendamentos/:id", async (c) => {
+    const usuario = c.get("usuario");
+    const r = await c.get("agenda").excluir(c.req.param("id"), usuario);
+    log.info?.(`Agendamento ${r.id} apagado (usuário ${usuario.id}).`);
+    return c.json(r);
+  });
+
+  // Limpeza: apaga os cancelados do período (?inicio=&fim=). Barbeiro: só os próprios.
+  api.delete("/admin/agendamentos", async (c) => {
+    const { inicio, fim } = c.req.query();
+    const r = await c.get("agenda").excluirCancelados({ inicio, fim, barbeiroId: barbeiroDoFiltro(c) });
+    log.info?.(`${r.apagados} cancelado(s) apagado(s) de ${inicio} a ${fim} (usuário ${c.get("usuario").id}).`);
+    return c.json(r);
+  });
+
   // Quantas pessoas cada barbeiro atendeu no período.
   api.get("/admin/relatorio", async (c) => {
     const { inicio, fim } = c.req.query();

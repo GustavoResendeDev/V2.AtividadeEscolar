@@ -2249,3 +2249,37 @@ header.cabecalhoPainel {
   border: 1px solid var(--linha);
   border-radius: var(--raio-pequeno);
 }
+
+/* Apagar atendimentos */
+.botaoPerigo {
+  color: #ffb4b6;
+  border-color: rgba(239, 68, 68, 0.55);
+}
+
+@media (hover: hover) {
+  .botaoPerigo:hover {
+    color: var(--branco);
+    background: rgba(239, 68, 68, 0.16);
+    border-color: var(--vermelho);
+  }
+}
+
+.botaoPerigo[hidden] {
+  display: none;
+}
+
+.cabecalhoTabela .botaoPerigo {
+  margin-left: auto;
+  align-self: center;
+}
+
+.zonaApagar {
+  display: grid;
+  gap: 6px;
+  padding-top: 14px;
+  border-top: 1px solid var(--linha);
+}
+
+.zonaApagar .dicaCampo {
+  margin: 0;
+}

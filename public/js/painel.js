@@ -223,6 +223,9 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   function desenharResumo(r) {
+    const botaoLimpar = el("apagarCancelados");
+    botaoLimpar.hidden = !r.cancelados;
+    botaoLimpar.textContent = r.cancelados === 1 ? "Apagar 1 cancelado" : `Apagar ${r.cancelados} cancelados`;
     el("indTotal").textContent = r.total;
     el("indPendentes").textContent = r.pendentes;
     el("indConfirmados").textContent = r.confirmados;
@@ -1159,6 +1162,46 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
     dialogoDetalhe.showModal();
   }
+
+  // ---------- Apagar ----------
+  el("apagarAtendimento").addEventListener("click", async () => {
+    const a = detalheAtual;
+    if (!a) return;
+    const quando = `${dataCurta(a.data)} às ${a.hora}`;
+    if (!confirm(`Apagar o atendimento de ${a.cliente.nome} (${quando})?\n\nEle some da agenda e dos relatórios. Não dá para desfazer.`)) return;
+    const botao = el("apagarAtendimento");
+    botao.disabled = true;
+    try {
+      await api(`/api/admin/agendamentos/${a.id}`, { method: "DELETE", body: "{}" });
+      dialogoDetalhe.close();
+      avisoRapido(`Apagado: ${a.cliente.nome}, ${quando}`);
+      anuncio.textContent = `Atendimento de ${a.cliente.nome} apagado.`;
+      await carregar();
+    } catch (erro) {
+      mostrarErro(el("erroDetalhe"), erro.message);
+    } finally {
+      botao.disabled = false;
+    }
+  });
+
+  el("apagarCancelados").addEventListener("click", async (e) => {
+    const botao = e.currentTarget;
+    const { inicio, fim } = periodo();
+    const quando = inicio === fim ? dataCurta(inicio) : `${dataCurta(inicio)} a ${dataCurta(fim)}`;
+    if (!confirm(`Apagar todos os atendimentos cancelados de ${quando}?\n\nNão dá para desfazer.`)) return;
+    const params = new URLSearchParams({ inicio, fim });
+    if (filtroBarbeiro.value) params.set("barbeiro", filtroBarbeiro.value);
+    botao.disabled = true;
+    try {
+      const { apagados } = await api(`/api/admin/agendamentos?${params}`, { method: "DELETE", body: "{}" });
+      avisoRapido(apagados === 1 ? "1 cancelado apagado" : `${apagados} cancelados apagados`);
+      await carregar();
+    } catch (erro) {
+      mostrarAviso(erro.message);
+    } finally {
+      botao.disabled = false;
+    }
+  });
 
   el("acoesDetalhe").addEventListener("click", async (e) => {
     const botao = e.target.closest(".acao");

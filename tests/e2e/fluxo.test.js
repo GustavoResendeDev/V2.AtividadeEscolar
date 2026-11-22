@@ -159,7 +159,14 @@ test("cliente agenda e o barbeiro confirma no painel", { skip: !playwright && "P
   assert.equal((await linhaFelipe.locator("td").first().textContent()).trim(), "1");
   await pagina.keyboard.press("Escape");
 
-  // 8. Sair encerra a sessão
+  // 8. Apagar: o atendimento remarcado some da agenda depois de confirmar
+  pagina.once("dialog", (d) => d.accept());
+  await movido.click();
+  await pagina.waitForSelector("#dialogoDetalhe[open]");
+  await pagina.click("#apagarAtendimento");
+  await movido.waitFor({ state: "detached" });
+
+  // 9. Sair encerra a sessão
   await pagina.click("#sair");
   await pagina.waitForURL(/admin\/(index\.html)?$/);
 

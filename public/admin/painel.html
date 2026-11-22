@@ -132,6 +132,7 @@
           <div class="cabecalhoTabela">
             <h2 id="tituloLista">Atendimentos</h2>
             <span class="contagemTabela" id="contagemLista"></span>
+            <button type="button" class="botao botaoContorno botaoPequeno botaoPerigo" id="apagarCancelados" hidden></button>
           </div>
           <table class="tabela tabelaAtendimentos" aria-labelledby="tituloLista">
             <thead>
@@ -260,6 +261,11 @@
           </div>
           <button type="submit" class="botao botaoContorno">Salvar novo horário</button>
         </form>
+
+        <div class="zonaApagar">
+          <button type="button" class="botao botaoContorno botaoPerigo" id="apagarAtendimento">Apagar atendimento</button>
+          <p class="dicaCampo">Some da agenda e dos relatórios. Não dá para desfazer.</p>
+        </div>
       </div>
     </dialog>
 

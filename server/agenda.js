@@ -566,6 +566,44 @@ function criarAgenda(db, { agora = () => new Date() } = {}) {
     });
   }
 
+  /* Clientes sem nenhum agendamento depois de uma exclusão: apaga também (LGPD, minimização de dados). */
+  const apagarClientesSemAgendamento = (tx, ids) =>
+    tx.query(
+      `DELETE FROM clientes c WHERE c.id = ANY($1::int[])
+         AND NOT EXISTS (SELECT 1 FROM agendamentos a WHERE a.cliente_id = c.id)`,
+      [`{${ids.join(",")}}`]
+    );
+
+  /* Apaga um atendimento de vez (some da agenda e dos relatórios).
+     Barbeiro só apaga os próprios; administrador apaga qualquer um. */
+  async function excluir(id, usuario) {
+    return db.transacao(async (tx) => {
+      const atual = await carregarParaAlterar(tx, id, usuario);
+      const { cliente_id } = await tx.um("DELETE FROM agendamentos WHERE id = $1 RETURNING cliente_id", [atual.id]);
+      await apagarClientesSemAgendamento(tx, [cliente_id]);
+      return { id: atual.id };
+    });
+  }
+
+  /* Limpeza: apaga os cancelados do período (só os do barbeiro, se for barbeiro). */
+  async function excluirCancelados({ inicio, fim, barbeiroId }) {
+    const p = periodo({ inicio, fim });
+    const valores = [p.inicio, p.fim];
+    let filtro = "";
+    if (barbeiroId) {
+      valores.push(idValido(barbeiroId) || 0);
+      filtro = "AND barbeiro_id = $3";
+    }
+    return db.transacao(async (tx) => {
+      const apagados = await tx.query(
+        `DELETE FROM agendamentos WHERE data BETWEEN $1 AND $2 AND status = 'cancelado' ${filtro} RETURNING cliente_id`,
+        valores
+      );
+      if (apagados.length) await apagarClientesSemAgendamento(tx, [...new Set(apagados.map((a) => a.cliente_id))]);
+      return { apagados: apagados.length };
+    });
+  }
+
   /* LGPD (art. 15 e 16): passado o prazo de retenção, o cliente vira "Cliente anonimizado".
      O agendamento continua contando para as estatísticas, sem identificar ninguém. */
   async function anonimizarAntigos(dias = DIAS_RETENCAO) {
@@ -593,6 +631,8 @@ function criarAgenda(db, { agora = () => new Date() } = {}) {
     criarManual,
     remarcar,
     mudarStatus,
+    excluir,
+    excluirCancelados,
     anonimizarAntigos,
   };
 }

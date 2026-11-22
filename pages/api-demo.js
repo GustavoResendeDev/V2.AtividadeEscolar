@@ -292,6 +292,27 @@
     return formatar(a);
   }
 
+  function excluir(id, usuario) {
+    const lista = carregar().agendamentos;
+    const i = lista.findIndex((x) => x.id === Number(id));
+    if (i === -1) throw new ErroNegocio(404, "Agendamento não encontrado.");
+    if (usuario.papel === "barbeiro" && lista[i].barbeiro_id !== usuario.barbeiro_id)
+      throw new ErroNegocio(403, "Você só pode alterar os seus atendimentos.");
+    lista.splice(i, 1);
+    salvar();
+    return { id: Number(id) };
+  }
+
+  function excluirCancelados(inicio, fim, barbeiroId) {
+    const dados = carregar();
+    const antes = dados.agendamentos.length;
+    dados.agendamentos = dados.agendamentos.filter(
+      (a) => !(a.status === "cancelado" && a.data >= inicio && a.data <= fim && (!barbeiroId || a.barbeiro_id === Number(barbeiroId)))
+    );
+    salvar();
+    return { apagados: antes - dados.agendamentos.length };
+  }
+
   const usuarioDaSessao = () => USUARIOS.find((u) => u.id === carregar().sessao) || null;
 
   // ---------- Roteador: mesmas rotas e respostas do server/app.js ----------
@@ -327,6 +348,9 @@
       }
       const m = caminho.match(/^\/admin\/agendamentos\/(\d+)$/);
       if (metodo === "PATCH" && m) return [200, mudarStatus(m[1], corpo?.status, usuario)];
+      if (metodo === "DELETE" && m) return [200, excluir(m[1], usuario)];
+      if (metodo === "DELETE" && caminho === "/admin/agendamentos")
+        return [200, excluirCancelados(q.get("inicio"), q.get("fim"), barbeiroFiltro)];
     }
     return [404, { erro: "Rota não encontrada." }];
   }
